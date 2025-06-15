@@ -21,7 +21,7 @@ namespace SWork.Data.Entities
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string Status { get; set; } = "ACTIVE";
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; }   // setup image null
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 

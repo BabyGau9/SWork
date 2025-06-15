@@ -41,8 +41,7 @@ namespace SWork.Data.DTO.JobDTO
         public string? WorkingHours { get; set; }
         public DateTime? StartDate { get; set; } = null;
         public DateTime? EndDate { get; set; } = null;
-
-        [Required(ErrorMessage = "Mục hình ảnh không được để trống.")]
+        // setup image null
         public IFormFile? Image { get; set; }
     }
 }
