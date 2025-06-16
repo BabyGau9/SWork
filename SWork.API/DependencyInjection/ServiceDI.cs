@@ -23,6 +23,7 @@ namespace SWork.API.DependencyInjection
             // DI service entities
             services.AddTransient<ISubscriptionService, SubscriptionService>();
             services.AddTransient<IJobService, JobService>();
+            services.AddTransient<IInterviewService, InterviewService>();
             services.AddTransient<IResumeService, ResumeService>();
             services.AddScoped<IStudentService, StudentService>();
             services.AddScoped<IEmployerService, EmployerService>();

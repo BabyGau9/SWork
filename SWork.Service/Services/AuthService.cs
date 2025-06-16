@@ -186,5 +186,19 @@ namespace SWork.Service.Services
             token.Revoked = DateTime.UtcNow;
             await _unitOfWork.SaveChangeAsync();
         }
+
+        public async Task<bool> HasPermissionForApplicationAsync(int applicationId, string employerId)
+        {
+            var application = await _unitOfWork.GenericRepository<Application>()
+                .GetFirstOrDefaultAsync(
+                    a => a.ApplicationID == applicationId,
+                    includeProperties: "Job");
+
+            if (application == null || application.Job == null)
+                return false;
+
+            return application.Job.EmployerID.ToString() == employerId;
+
+        }
     }
 }

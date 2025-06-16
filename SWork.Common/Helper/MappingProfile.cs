@@ -12,6 +12,7 @@ using SWork.Data.DTO.ApplicationDTO;
 using SWork.Data.DTO.JobBookMarkDTO;
 using SWork.Data.DTO.Wallet.ManagementWalletDTO;
 using SWork.Data.DTO.Wallet.TransactionDTO;
+using SWork.Data.DTO.InterviewDTO;
 
 namespace SWork.Common.Helper
 {
@@ -62,6 +63,19 @@ namespace SWork.Common.Helper
             // Job
             CreateMap<CreateJobDTO, Job>().ReverseMap();
 
+            CreateMap<CreateInterviewDTO, Interview>()       // input
+           .ReverseMap();                               // ⇄ cho phép Interview -> CreateInterviewDTO
+
+            CreateMap<Interview, InterviewDTO>();
+            CreateMap<Interview, InterviewResponseDTO>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.Application.Job.Title))
+            .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Application.Job.Employer.Company_name))
+            .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src =>
+                src.Application.Student.User != null
+                    ? $"{src.Application.Student.User.FirstName} {src.Application.Student.User.LastName}"
+                    : "Unknown Student"
+            ));
             //Subscription
             CreateMap<SubDTO, Subscription>().ReverseMap();
 
@@ -83,6 +97,13 @@ namespace SWork.Common.Helper
             CreateMap<WalletTransactionCreateDTO, WalletTransaction>().ReverseMap();
             CreateMap<WalletTransactionResponseDTO, WalletTransaction>().ReverseMap();
 
+            CreateMap<CreateInterviewDTO, Interview>()
+                .ForMember(dest => dest.ScheduledTime,
+                    opt => opt.MapFrom(src => src.ScheduledTime.ToUniversalTime()))
+                .ForMember(dest => dest.Status,
+                    opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt,
+                    opt => opt.Ignore());
 
         }
        

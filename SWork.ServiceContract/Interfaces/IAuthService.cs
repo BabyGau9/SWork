@@ -8,5 +8,6 @@ namespace SWork.ServiceContract.Interfaces
         Task<bool> ConfirmEmail(string email, string token);
         Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequestDTO);
         Task LogoutAsync(string refreshToken);
+        Task<bool> HasPermissionForApplicationAsync(int applicationId, string employerId);
     }
 }
