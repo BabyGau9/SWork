@@ -11,9 +11,9 @@ namespace SWork.ServiceContract.Interfaces
            Expression<Func<Resume, object>>? orderBy = null,
            bool isDescending = false);
         Task<Resume> GetResumeByIdAsync(int resumId);
-        Task CreateResumeAsync(CreateResumeDTO resumDto);
-        Task UpdateResumeAsync(Resume resum);
-        Task DeleteResumeAsync(int resumId);
+        Task<Resume> CreateResumeAsync(CreateResumeDTO resumDto, string userID);
+        Task<Resume> UpdateResumeAsync(int id,UpdateResumeDTO resum, string userID);
+        Task DeleteResumeAsync(int resumId, string userID);
 
         Task<Pagination<Resume>> SearchResumeAsync(string? nameResume, int? studentId, int pageIndex, int pageSize);
     }

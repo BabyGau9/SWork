@@ -1,6 +1,7 @@
 ﻿
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace SWork.Data.Entities
 {
@@ -9,8 +10,8 @@ namespace SWork.Data.Entities
         [Key]
         public int ResumeID { get; set; }
         public int StudentID { get; set; }
-        public string ResumeType { get; set; } // 'UPLOADED', 'CREATED'
-        public string FileURL { get; set; }
+        public string? ResumeType { get; set; } // 'UPLOADED', 'CREATED'
+        public string? FileURL { get; set; }
         public bool IsDefault { get; set; } = false;
         public string FullName { get; set; }
         public string JobTitle { get; set; }
@@ -29,6 +30,7 @@ namespace SWork.Data.Entities
 
         // Navigation properties
         [ForeignKey("StudentID")]
+        [JsonIgnore]
         public virtual Student Student { get; set; }
         public virtual ICollection<Application> Applications { get; set; }
     }
