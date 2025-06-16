@@ -91,5 +91,21 @@ namespace SWork.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("employer-jobs")]
+        [Authorize(Roles = "Employer")]
+        public async Task<IActionResult> GetEmployerJobs(int pageIndex = 1, int pageSize = 10)
+        {
+            string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            try
+            {
+                var jobs = await _jobService.GetJobsByEmployerIdAsync(userId, pageIndex, pageSize);
+                return Ok(jobs);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

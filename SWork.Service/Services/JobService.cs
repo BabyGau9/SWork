@@ -332,5 +332,25 @@ namespace SWork.Service.Services
                 PageSize = paginatedJobs.PageSize
             };
         }
+        public async Task<Pagination<Job>> GetJobsByEmployerIdAsync(string userId, int pageIndex, int pageSize)
+        {
+            // 1. Lấy thông tin employer từ userId
+            var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(e => e.UserID == userId);
+            if (employer == null) throw new Exception("Không tìm thấy thông tin nhà tuyển dụng.");
+
+            // 2. Lọc danh sách Job theo EmployerID
+            Expression<Func<Job, bool>> predicate = job => job.EmployerID == employer.EmployerID;
+
+            // 3. Gọi hàm gốc lấy danh sách Job (pagination)
+            var result = await GetPaginatedJobAsync(
+                pageIndex,
+                pageSize,
+                predicate,
+                orderBy: j => j.CreatedAt,
+                isDescending: true
+            );
+
+            return result;
+        }
     }
 }
