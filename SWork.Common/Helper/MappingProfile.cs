@@ -67,6 +67,15 @@ namespace SWork.Common.Helper
            .ReverseMap();                               // ⇄ cho phép Interview -> CreateInterviewDTO
 
             CreateMap<Interview, InterviewDTO>();
+            CreateMap<Interview, InterviewResponseDTO>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.Application.Job.Title))
+            .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Application.Job.Employer.Company_name))
+            .ForMember(dest => dest.StudentName, opt => opt.MapFrom(src =>
+                src.Application.Student.User != null
+                    ? $"{src.Application.Student.User.FirstName} {src.Application.Student.User.LastName}"
+                    : "Unknown Student"
+            ));
             //Subscription
             CreateMap<SubDTO, Subscription>().ReverseMap();
 
