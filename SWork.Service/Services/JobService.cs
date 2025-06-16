@@ -59,11 +59,6 @@ namespace SWork.Service.Services
                 // so sánh wallet.balana >= subscription.price
                 if (wallet.Balance < subscription.Price)
                 {
-
-                    jobDto.Status = "PENDINGPAYMENT";
-                    await _unitOfWork.GenericRepository<Job>().InsertAsync(job);
-                    await _unitOfWork.SaveChangeAsync();
-                    await _unitOfWork.CommitTransactionAsync();
                     throw new Exception("Số dư trong ví không đủ. Vui lòng quét mã để đăng bài");
                 }
                 else if (wallet.Balance >= subscription.Price)

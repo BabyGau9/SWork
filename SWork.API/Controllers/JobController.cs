@@ -35,8 +35,8 @@ namespace SWork.API.Controllers
         {
             try
             {
-                await _jobService.GetJobByIdAsync(id);
-                return Ok("Job have exsit.");
+                var job = await _jobService.GetJobByIdAsync(id);
+                return Ok(job);
             }
             catch (Exception ex)
             {

@@ -14,7 +14,7 @@ namespace SWork.Data.DTO.CVDTO
         [StringLength(60, MinimumLength = 2)]
         public string JobTitle { get; set; }
 
-        public string FileURL { get; set; }
+        public string? FileURL { get; set; }
 
         [Required]
         [EmailAddress]

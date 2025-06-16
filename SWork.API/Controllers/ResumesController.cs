@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SWork.Data.DTO.CVDTO;
 using SWork.Service.Services;
 using SWork.ServiceContract.Interfaces;
+using System.Security.Claims;
 
 namespace SWork.API.Controllers
 {
@@ -15,16 +17,18 @@ namespace SWork.API.Controllers
         {
             _resumeService = resumeService;
         }
+        [Authorize(Roles = "Student,Admin")]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateResumeDTO model)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+            string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             try
             {
-                await _resumeService.CreateResumeAsync(model);
-                return Ok();
+                var resume = await _resumeService.CreateResumeAsync(model, userId);
+                return Ok(resume);
             }
             catch (Exception ex)
             {
@@ -33,22 +37,30 @@ namespace SWork.API.Controllers
         }
 
         [HttpPut("update/{id}")]
+        [Authorize(Roles = "Student,Admin")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateResumeDTO model)
         {
-            var existing = await _resumeService.GetResumeByIdAsync(id);
-            if (existing == null)
-                return NotFound("Category not found");
+            string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            try
+            {
+                var resume = await _resumeService.UpdateResumeAsync(id, model, userId);
 
-            await _resumeService.UpdateResumeAsync(existing);
-            return Ok("Resume updated successfully.");
+                return Ok(resume);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Student,Admin")]
         public async Task<IActionResult> Delete(int id)
         {
+            string userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             try
             {
-                await _resumeService.DeleteResumeAsync(id);
+                await _resumeService.DeleteResumeAsync(id, userId);
                 return Ok("Resume was deleted successfully.");
             }
             catch (Exception ex)

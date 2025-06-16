@@ -14,8 +14,8 @@ namespace SWork.Data.DTO.CVDTO
         [StringLength(100, MinimumLength = 3)]
         public string FullName { get; set; }
 
-        public string ResumeType { get; set; }
-        public string FileURL { get; set; }
+        public string? ResumeType { get; set; }
+        public string? FileURL { get; set; }
 
         [Required]
         [StringLength(60, MinimumLength = 2)]
