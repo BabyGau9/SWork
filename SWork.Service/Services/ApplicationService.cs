@@ -341,7 +341,7 @@ namespace SWork.Service.Services
                 Location = null,
                 MeetingLink = null,
                 Note = null,
-                Status = "PENDING",
+                Status = InterviewStatus.PENDING,
                 CreatedAt = DateTime.Now,
             };
             await _unitOfWork.GenericRepository<Interview>().InsertAsync(interview);

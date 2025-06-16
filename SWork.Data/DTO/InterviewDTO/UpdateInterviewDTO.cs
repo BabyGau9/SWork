@@ -1,5 +1,6 @@
 ﻿
 using System.ComponentModel.DataAnnotations;
+using SWork.Data.Enum;
 
 namespace SWork.Data.DTO.InterviewDTO
 {
@@ -18,6 +19,6 @@ namespace SWork.Data.DTO.InterviewDTO
         [Required]
         public string Note { get; set; }
         [Required]
-        public string Status { get; set; }
+        public InterviewStatus Status { get; set; }
     }
 }

@@ -1,68 +1,221 @@
 ﻿
+using System;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
 using SWork.Data.DTO.InterviewDTO;
+using SWork.Data.Entities;
+using SWork.Data.Enum;
 
 namespace SWork.Service.Services
 {
-    public class InterviewService : IInterViewService
+    public class InterviewService : IInterviewService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuthService _authService;
         private readonly IMapper _mapper;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public InterviewService(IUnitOfWork unitOfWork, IMapper mapper)
+        public InterviewService(IUnitOfWork unitOfWork, IAuthService authService, IMapper mapper, UserManager<ApplicationUser> userManager)
         {
             _unitOfWork = unitOfWork;
+            _authService = authService;
             _mapper = mapper;
+            _userManager = userManager; 
         }
 
-        public Task<InterviewDTO> GetInterviewByIdAsync(int interId, string userId)
+        public async Task<CreateInterviewDTO> CreateInterviewAsync(CreateInterviewDTO dto, string userId)
+
         {
-            throw new NotImplementedException();
-        }
+            var user = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == userId);
+            var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
+            if (employer == null || user == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi ứng tuyển.");
 
-        public Task<Pagination<InterviewDTO>> GetInterviewJobForStudent(string userId, int pageIndex, int pageSize)
-        {
-            throw new NotImplementedException();
-        }
+            var app = await _unitOfWork.GenericRepository<Application>().GetFirstOrDefaultAsync(a => a.ApplicationID == dto.ApplicationID);
+            if (app == null) throw new Exception("Application không tồn tại");
 
-        public Task<Pagination<InterviewDTO>> GetInterviewRelatedApplicationForEmployer(string userId, int interId, int pageIndex, int pageSize)
-        {
-            throw new NotImplementedException();
-        }
+            var interview = new Interview
+            {
+                ApplicationID = dto.ApplicationID,
+                ScheduledTime = dto.ScheduledTime,
+                Location = dto.Location,
+                MeetingLink = dto.MeetingLink,
+                Note = dto.Note,
+                Status = InterviewStatus.PENDING
+            };
 
-        public Task<Pagination<Interview>> GetPaginatedInterviewAsync(int pageIndex, int pageSize, Expression<Func<Interview, bool>>? predicate = null, Expression<Func<Interview, object>>? orderBy = null, bool isDescending = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<InterviewDTO> UpdateInterviewAsync(UpdateInterviewDTO dto, string userId)
-        {
-            var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(e => e.UserID == userId);
-            var interview = await _unitOfWork.GenericRepository<Interview>().GetFirstOrDefaultAsync(i => i.InterviewID == dto.InterviewID);
-
-            if (interview == null || interview.SenderID != employer.EmployerID)
-                throw new Exception("Bạn không có quyền cập nhật lịch phỏng vấn này.");
-            if (interview.Status == "REJECTED") throw new Exception("Bạn không thể cập nhật lịch phỏng vấn này.");
-
-            interview.ScheduledTime = dto.ScheduledTime;
-            interview.Duration_minutes = dto.Duration_minutes;
-            interview.MeetingLink = dto.MeetingLink;
-            interview.Location = dto.Location;
-            interview.Note = dto.Note;
-            interview.Status = dto.Status;
-
-            _unitOfWork.GenericRepository<Interview>().Update(interview);
+            await _unitOfWork.GenericRepository<Interview>().InsertAsync(interview);
             await _unitOfWork.SaveChangeAsync();
 
-            InterviewDTO res = new()
-            {
-                ScheduledTime = interview.ScheduledTime,
-                Duration_minutes = interview.Duration_minutes,
-                Location = interview.Location,
-                MeetingLink = interview.MeetingLink,
-                Note = interview.Note,
-                Status = interview.Status
-            };
-            return res;
+            return _mapper.Map<CreateInterviewDTO>(interview);
         }
+
+
+
+        //public async Task<InterviewDTO> CreateInterviewAsync(CreateInterviewDTO dto, int applicationId)
+        //{
+        //    var application = await _unitOfWork.GenericRepository<Application>().GetFirstOrDefaultAsync(a => a.ApplicationID == applicationId);
+        //    if (application == null)
+        //        throw new Exception("Application not found");
+
+        //    //// Check if employer has permission for this application
+        //    //if (!await _authService.HasPermissionForApplicationAsync(application))
+        //    //    throw new UnauthorizedException("You don't have permission to create interview for this application");
+
+        //    var interview = new Interview
+        //    {
+        //        ApplicationId = dto.ApplicationID,
+        //        ScheduledTime = dto.ScheduledTime,
+        //        Location = dto.Location,
+        //        MeetingLink = dto.MeetingLink,
+        //        Notes = dto.Note,
+        //        Status = InterviewStatus.Scheduled
+        //    };
+
+        //    await _unitOfWork.GenericRepository<Interview>().InsertAsync(interview);
+        //    await _unitOfWork.SaveChangeAsync();
+
+        //    return _mapper.Map<InterviewDTO>(interview);
+        //}
+
+        //public async Task<InterviewDTO> UpdateInterviewAsync(long interviewId, UpdateInterviewDTO dto)
+        //{
+        //    var interview = await _unitOfWork.InterviewRepository.GetByIdAsync(interviewId);
+        //    if (interview == null)
+        //        throw new NotFoundException("Interview not found");
+
+        //    // Check if employer has permission and is the creator
+        //    if (!await _authService.HasPermissionForApplicationAsync(interview.Application))
+        //        throw new UnauthorizedException("You don't have permission to update this interview");
+
+        //    // Check if interview can be updated
+        //    if (interview.Status != InterviewStatus.Scheduled)
+        //        throw new InvalidOperationException("Cannot update interview that is not in Scheduled status");
+
+        //    interview.ScheduledTime = dto.ScheduledTime;
+        //    interview.Location = dto.Location;
+        //    interview.MeetingLink = dto.MeetingLink;
+        //    interview.Notes = dto.Notes;
+        //    interview.UpdatedAt = DateTime.UtcNow;
+
+        //    _unitOfWork.InterviewRepository.Update(interview);
+        //    await _unitOfWork.SaveChangesAsync();
+
+        //    return _mapper.Map<InterviewDTO>(interview);
+        //}
+
+        //public async Task<InterviewDTO> GetInterviewDetailsAsync(long interviewId)
+        //{
+        //    var interview = await _unitOfWork.InterviewRepository.GetByIdAsync(interviewId);
+        //    if (interview == null)
+        //        throw new NotFoundException("Interview not found");
+
+        //    // Check if user has permission to view
+        //    if (!await _authService.HasPermissionToViewInterviewAsync(interview))
+        //        throw new UnauthorizedException("You don't have permission to view this interview");
+
+        //    return _mapper.Map<InterviewDTO>(interview);
+        //}
+
+        //public async Task<InterviewDTO> CancelInterviewAsync(long interviewId)
+        //{
+        //    var interview = await _unitOfWork.InterviewRepository.GetByIdAsync(interviewId);
+        //    if (interview == null)
+        //        throw new NotFoundException("Interview not found");
+
+        //    // Check if employer has permission and is the creator
+        //    if (!await _authService.HasPermissionForApplicationAsync(interview.Application))
+        //        throw new UnauthorizedException("You don't have permission to cancel this interview");
+
+        //    // Check if interview can be cancelled
+        //    if (interview.Status != InterviewStatus.Scheduled)
+        //        throw new InvalidOperationException("Cannot cancel interview that is not in Scheduled status");
+
+        //    interview.Status = InterviewStatus.Cancelled;
+        //    interview.UpdatedAt = DateTime.UtcNow;
+
+        //    _unitOfWork.InterviewRepository.Update(interview);
+        //    await _unitOfWork.SaveChangesAsync();
+
+        //    return _mapper.Map<InterviewDTO>(interview);
+        //}
+
+        //public async Task<InterviewDTO> AcceptInterviewAsync(long interviewId)
+        //{
+        //    var interview = await _unitOfWork.InterviewRepository.GetByIdAsync(interviewId);
+        //    if (interview == null)
+        //        throw new NotFoundException("Interview not found");
+
+        //    // Check if student has permission
+        //    if (!await _authService.IsStudentOfApplicationAsync(interview.Application))
+        //        throw new UnauthorizedException("Only the student can accept the interview");
+
+        //    // Check if interview can be accepted
+        //    if (interview.Status != InterviewStatus.Scheduled)
+        //        throw new InvalidOperationException("Cannot accept interview that is not in Scheduled status");
+
+        //    interview.Status = InterviewStatus.Accepted;
+        //    interview.UpdatedAt = DateTime.UtcNow;
+
+        //    _unitOfWork.InterviewRepository.Update(interview);
+        //    await _unitOfWork.SaveChangesAsync();
+
+        //    return _mapper.Map<InterviewDTO>(interview);
+        //}
+
+        //public async Task<InterviewDTO> RejectInterviewAsync(long interviewId)
+        //{
+        //    var interview = await _unitOfWork.InterviewRepository.GetByIdAsync(interviewId);
+        //    if (interview == null)
+        //        throw new NotFoundException("Interview not found");
+
+        //    // Check if student has permission
+        //    if (!await _authService.IsStudentOfApplicationAsync(interview.Application))
+        //        throw new UnauthorizedException("Only the student can reject the interview");
+
+        //    // Check if interview can be rejected
+        //    if (interview.Status != InterviewStatus.Scheduled)
+        //        throw new InvalidOperationException("Cannot reject interview that is not in Scheduled status");
+
+        //    interview.Status = InterviewStatus.Rejected;
+        //    interview.UpdatedAt = DateTime.UtcNow;
+
+        //    _unitOfWork.InterviewRepository.Update(interview);
+        //    await _unitOfWork.SaveChangesAsync();
+
+        //    return _mapper.Map<InterviewDTO>(interview);
+        //}
+
+        //public async Task<IEnumerable<InterviewDTO>> GetInterviewsByApplicationAsync(long applicationId)
+        //{
+        //    var application = await _unitOfWork.ApplicationRepository.GetByIdAsync(applicationId);
+        //    if (application == null)
+        //        throw new NotFoundException("Application not found");
+
+        //    // Check if user has permission to view
+        //    if (!await _authService.HasPermissionToViewApplicationAsync(application))
+        //        throw new UnauthorizedException("You don't have permission to view interviews for this application");
+
+        //    var interviews = await _unitOfWork.InterviewRepository
+        //        .GetAll()
+        //        .Include(i => i.Application)
+        //        .Where(i => i.ApplicationId == applicationId)
+        //        .OrderByDescending(i => i.ScheduledTime)
+        //        .ToListAsync();
+
+        //    return _mapper.Map<IEnumerable<InterviewDTO>>(interviews);
+        //}
+
+        //public async Task<IEnumerable<InterviewDTO>> GetStudentInterviewsAsync()
+        //{
+        //    var currentStudent = await _authService.GetCurrentStudentAsync();
+        //    var interviews = await _unitOfWork.InterviewRepository
+        //        .GetAll()
+        //        .Include(i => i.Application)
+        //        .Where(i => i.Application.StudentId == currentStudent.Id)
+        //        .OrderByDescending(i => i.ScheduledTime)
+        //        .ToListAsync();
+
+        //    return _mapper.Map<IEnumerable<InterviewDTO>>(interviews);
+        //}
     }
-}
+} 

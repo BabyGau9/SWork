@@ -1,7 +1,7 @@
-﻿
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
-
+using System.ComponentModel.DataAnnotations.Schema;
+using SWork.Data.Enum;
 
 namespace SWork.Data.Entities
 {
@@ -15,9 +15,7 @@ namespace SWork.Data.Entities
         public string Location { get; set; }
         public string MeetingLink { get; set; }
         public string Note { get; set; }
-        public string Status { get; set; } = "SCHEDULED";
-        public int SenderID { get; set; }
-        public int ReceiverID { get; set; }
+        public InterviewStatus Status { get; set; } = InterviewStatus.SCHEDULED;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation properties

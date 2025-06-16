@@ -1,20 +1,26 @@
 ﻿
+
 using SWork.Data.DTO.InterviewDTO;
 
 namespace SWork.ServiceContract.Interfaces
 {
-    public interface IInterViewService
+    public interface IInterviewService
     {
-        Task<InterviewDTO> UpdateInterviewAsync(UpdateInterviewDTO interDto, string userId);
-        Task<InterviewDTO> GetInterviewByIdAsync(int interId, string userId);
-        Task<Pagination<Interview>> GetPaginatedInterviewAsync(
-             int pageIndex,
-             int pageSize,
-             Expression<Func<Interview, bool>>? predicate = null,
-             Expression<Func<Interview, object>>? orderBy = null,
-             bool isDescending = false);
+        Task<CreateInterviewDTO> CreateInterviewAsync(CreateInterviewDTO dto, string userId);
+        //Task<InterviewDTO> CreateInterviewAsync(CreateInterviewDTO dto);
 
-        Task<Pagination<InterviewDTO>> GetInterviewRelatedApplicationForEmployer(string userId, int interId, int pageIndex, int pageSize);
-        Task<Pagination<InterviewDTO>> GetInterviewJobForStudent(string userId, int pageIndex, int pageSize);
+        //Task<InterviewDTO> UpdateInterviewAsync(long interviewId, UpdateInterviewDTO dto);
+
+        //Task<InterviewDTO> GetInterviewDetailsAsync(long interviewId);
+
+        //Task<InterviewDTO> CancelInterviewAsync(long interviewId);
+
+        //Task<InterviewDTO> AcceptInterviewAsync(long interviewId);
+
+        //Task<InterviewDTO> RejectInterviewAsync(long interviewId);
+
+        //Task<IEnumerable<InterviewDTO>> GetInterviewsByApplicationAsync(long applicationId);
+
+        //Task<IEnumerable<InterviewDTO>> GetStudentInterviewsAsync();
     }
 }

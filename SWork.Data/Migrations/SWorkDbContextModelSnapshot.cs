@@ -51,19 +51,19 @@ namespace SWork.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "227ed8aa-5e2b-436a-82ac-23cc80aea675",
+                            Id = "283e65c8-26c5-4b73-bab8-1b986ead6345",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "4c2fc2ed-779c-43db-9e32-16a60b3d8dbc",
+                            Id = "08436539-f4dc-4251-8554-44e87ed5464b",
                             Name = "Employer",
                             NormalizedName = "EMPLOYER"
                         },
                         new
                         {
-                            Id = "2115ada0-22c7-4d93-90b6-629de89f6959",
+                            Id = "73d9b020-9d92-420d-a5e7-6afe5ff8d4c1",
                             Name = "Student",
                             NormalizedName = "STUDENT"
                         });
@@ -428,9 +428,8 @@ namespace SWork.Data.Migrations
                     b.Property<DateTime>("ScheduledTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("InterviewID");
 
