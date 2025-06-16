@@ -1,5 +1,6 @@
-﻿
-
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using SWork.Data.DTO;
 using SWork.Data.DTO.InterviewDTO;
 
 namespace SWork.ServiceContract.Interfaces
@@ -7,20 +8,13 @@ namespace SWork.ServiceContract.Interfaces
     public interface IInterviewService
     {
         Task<CreateInterviewDTO> CreateInterviewAsync(CreateInterviewDTO dto, string userId);
-        //Task<InterviewDTO> CreateInterviewAsync(CreateInterviewDTO dto);
+        Task<InterviewResponseDTO> GetByIdAsync(int id);
+        Task<IEnumerable<InterviewResponseDTO>> GetAllAsync();
+        Task<IEnumerable<InterviewResponseDTO>> GetByApplicationIdAsync(int applicationId);
+        Task<IEnumerable<InterviewResponseDTO>> GetByStudentIdAsync(int studentId);
+        Task<IEnumerable<InterviewResponseDTO>> GetByEmployerIdAsync(int employerId);
+        Task<InterviewResponseDTO> UpdateInterviewStatusAsync(int interviewId, UpdateInterviewDTO dto);
 
-        //Task<InterviewDTO> UpdateInterviewAsync(long interviewId, UpdateInterviewDTO dto);
-
-        //Task<InterviewDTO> GetInterviewDetailsAsync(long interviewId);
-
-        //Task<InterviewDTO> CancelInterviewAsync(long interviewId);
-
-        //Task<InterviewDTO> AcceptInterviewAsync(long interviewId);
-
-        //Task<InterviewDTO> RejectInterviewAsync(long interviewId);
-
-        //Task<IEnumerable<InterviewDTO>> GetInterviewsByApplicationAsync(long applicationId);
-
-        //Task<IEnumerable<InterviewDTO>> GetStudentInterviewsAsync();
+        Task<InterviewResponseDTO> UpdateInterviewStatusBeforeAsync(int interviewId, UpdateInterviewDTO dto);
     }
 }

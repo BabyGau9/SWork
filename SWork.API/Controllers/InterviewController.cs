@@ -34,73 +34,82 @@ namespace SWork.API.Controllers
 
         }
 
-        //[HttpPut("{id}")]
-        //[Authorize(Roles = "Employer")]
-        //public async Task<ActionResult<InterviewDTO>> UpdateInterview(int id, UpdateInterviewDTO dto)
-        //{
-        //    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        //    var interview = await _interviewService.UpdateInterviewAsync(id, dto, userId);
-        //    return Ok(interview);
-        //}
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetAll()
+        {
+            var interviews = await _interviewService.GetAllAsync();
+            return Ok(interviews);
+        }
 
-        //[HttpGet("{id}")]
-        //public async Task<ActionResult<InterviewDTO>> GetInterview(int id)
-        //{
-        //    var interview = await _interviewService.GetInterviewByIdAsync(id);
-        //    return Ok(interview);
-        //}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<InterviewResponseDTO>> GetById(int id)
+        {
+            var interview = await _interviewService.GetByIdAsync(id);
+            if (interview == null)
+                return NotFound();
 
-        //[HttpPost("{id}/cancel")]
-        //[Authorize(Roles = "Employer")]
-        //public async Task<ActionResult> CancelInterview(int id)
-        //{
-        //    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        //    var result = await _interviewService.CancelInterviewAsync(id, userId);
-        //    return Ok(result);
-        //}
+            return Ok(interview);
+        }
 
-        //[HttpPost("{id}/accept")]
-        //[Authorize(Roles = "Student")]
-        //public async Task<ActionResult> AcceptInterview(int id)
-        //{
-        //    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        //    var result = await _interviewService.AcceptInterviewAsync(id, userId);
-        //    return Ok(result);
-        //}
+        [HttpGet("application/{applicationId}")]
+        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetByApplicationId(int applicationId)
+        {
+            var interviews = await _interviewService.GetByApplicationIdAsync(applicationId);
+            return Ok(interviews);
+        }
 
-        //[HttpPost("{id}/reject")]
-        //[Authorize(Roles = "Student")]
-        //public async Task<ActionResult> RejectInterview(int id)
-        //{
-        //    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        //    var result = await _interviewService.RejectInterviewAsync(id, userId);
-        //    return Ok(result);
-        //}
+        [HttpGet("student/{studentId}")]
+        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetByStudentId(int studentId)
+        {
+            var interviews = await _interviewService.GetByStudentIdAsync(studentId);
+            return Ok(interviews);
+        }
 
-        //[HttpGet("student")]
-        //[Authorize(Roles = "Student")]
-        //public async Task<ActionResult> GetInterviewsForStudent([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
-        //{
-        //    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        //    var (interviews, totalCount) = await _interviewService.GetInterviewsForStudentAsync(userId, pageNumber, pageSize);
-        //    return Ok(new { interviews, totalCount });
-        //}
+        [HttpGet("employer/{employerId}")]
+        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetByEmployerId(int employerId)
+        {
+            var interviews = await _interviewService.GetByEmployerIdAsync(employerId);
+            return Ok(interviews);
+        }
+        /// <summary>
+        /// Update Status After Interview (SCHEDULED = 1, ACCEPTED = 2, REJECTED = 3, CANCELLED = 4, COMPLETED = 5, PENDING = 6)
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut("{id}/status")]
+        public async Task<ActionResult<InterviewResponseDTO>> UpdateStatus(int id, [FromBody] UpdateInterviewDTO dto)
+        {
+            try
+            {
+                var result = await _interviewService.UpdateInterviewStatusAsync(id, dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
-        //[HttpGet("employer")]
-        //[Authorize(Roles = "Employer")]
-        //public async Task<ActionResult> GetInterviewsForEmployer([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
-        //{
-        //    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        //    var (interviews, totalCount) = await _interviewService.GetInterviewsForEmployerAsync(userId, pageNumber, pageSize);
-        //    return Ok(new { interviews, totalCount });
-        //}
+        /// <summary>
+        /// Update Status Before Interview (SCHEDULED = 1, ACCEPTED = 2, REJECTED = 3, CANCELLED = 4, COMPLETED = 5, PENDING = 6)
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPut("{id}/status-before")]
+        public async Task<ActionResult<InterviewResponseDTO>> UpdateStatusBefore(int id, [FromBody] UpdateInterviewDTO dto)
+        {
+            try
+            {
+                var result = await _interviewService.UpdateInterviewStatusBeforeAsync(id, dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
-        //[HttpGet("application/{applicationId}")]
-        //[Authorize(Roles = "Employer")]
-        //public async Task<ActionResult> GetInterviewsForApplication(int applicationId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
-        //{
-        //    var (interviews, totalCount) = await _interviewService.GetInterviewRelatedApplicationForEmployerAsync(applicationId, pageNumber, pageSize);
-        //    return Ok(new { interviews, totalCount });
-        //}
     }
 } 
