@@ -46,6 +46,7 @@ namespace SWork.Service.Services
                 {
                     STT = application.ApplicationID,
                     StudentName = user.UserName,
+                    JobID = application.JobID,
                     JobName = job.Title,
                     Status = application.Status,
                     ResumeID = application.ResumeID,
@@ -98,6 +99,7 @@ namespace SWork.Service.Services
                 {
                     STT = application.ApplicationID,
                     StudentName = Astudent.UserName,
+                    JobID = application.JobID,
                     JobName = job.Title,
                     Status = application.Status,
                     ResumeID = application.ResumeID,
@@ -147,6 +149,7 @@ namespace SWork.Service.Services
                 {
                     STT = application.ApplicationID,
                     StudentName = student2.UserName,
+                    JobID = application.JobID,
                     JobName = job.Title,
                     Status = application.Status,
                     ResumeID = application.ResumeID,
@@ -228,6 +231,7 @@ namespace SWork.Service.Services
                 {
                     STT = application.ApplicationID,
                     StudentName = studentUser?.UserName,
+                    JobID = application.JobID,
                     JobName = job.Title,
                     Status = application.Status,
                     ResumeID = application.ResumeID,
@@ -303,6 +307,7 @@ namespace SWork.Service.Services
                 {
                     STT = application.ApplicationID,
                     StudentName = studentUser?.UserName,
+                    JobID = application.JobID,
                     JobName = job.Title,
                     Status = application.Status,
                     ResumeID = application.ResumeID,

@@ -11,6 +11,8 @@ namespace SWork.Data.DTO.ApplicationDTO
 
         [Required]
         public string StudentName { get; set; }
+        public int? JobID { get; set; }
+
         [Required]
         public string JobName { get; set; }
 
