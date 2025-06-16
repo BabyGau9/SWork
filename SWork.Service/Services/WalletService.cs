@@ -91,7 +91,7 @@ namespace SWork.Service.Services
                 return false; // Không đủ số dư
             }
 
-            await _unitOfWork.BeginTransactionAsync();
+          
             try
             {
                 wallet.Balance -= amount;
@@ -100,14 +100,10 @@ namespace SWork.Service.Services
 
                 // Tạo giao dịch thông qua phương thức nội bộ
                 await AddTransactionInternalAsync(wallet.WalletID, amount, description, transactionType);
-
-                await _unitOfWork.SaveChangeAsync();
-                await _unitOfWork.CommitTransactionAsync();
                 return true;
             }
             catch (Exception)
             {
-                await _unitOfWork.RollbackTransactionAsync();
                 return false; // Hoặc ném lại ngoại lệ
             }
         }
