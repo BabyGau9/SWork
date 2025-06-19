@@ -20,7 +20,7 @@ namespace SWork.Data.DTO.JobDTO
         [Range(0, double.MaxValue)]
         public decimal? Salary { get; set; }
 
-        [RegularExpression("^(Active|InActive)$")]
+        [RegularExpression("^(ACTIVE|INACTIVE)$")]
         public string? Status { get; set; }
 
         [StringLength(100)]

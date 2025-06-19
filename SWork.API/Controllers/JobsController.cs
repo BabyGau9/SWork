@@ -9,11 +9,11 @@ namespace SWork.API.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
-    public class JobController : Controller
+    public class JobsController : Controller
     {
         private readonly IJobService _jobService;
 
-        public JobController(IJobService jobService)
+        public JobsController(IJobService jobService)
         {
             _jobService = jobService;
         }

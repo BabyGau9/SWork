@@ -1,4 +1,5 @@
-﻿using SWork.Data.DTO.JobDTO;
+﻿using SWork.Common.Middleware;
+using SWork.Data.DTO.JobDTO;
 using SWork.ServiceContract.ICloudinaryService;
 
 namespace SWork.Service.Services
@@ -36,13 +37,13 @@ namespace SWork.Service.Services
         public async Task CreateJobAsync(CreateJobDTO jobDto, string userId)
         {
             var subscription = await _unitOfWork.GenericRepository<Subscription>().GetFirstOrDefaultAsync(a => a.SubscriptionID == jobDto.SubscriptionID);
-            if (subscription == null) throw new Exception("Gói bài viết không tồn tại.Vui lòng chọn lại!");
+            if (subscription == null) throw new BadRequestException("Gói bài viết không tồn tại.Vui lòng chọn lại!");
 
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (employer == null) throw new Exception("Bạn không có quyền tạo mới công việc.");
+            if (employer == null) throw new ForbiddenException("Bạn không có quyền tạo mới công việc.");
 
             var wallet = await _unitOfWork.GenericRepository<Wallet>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (wallet == null) throw new Exception("Ví không tồn tại.");
+            if (wallet == null) throw new NotFoundException("Ví không tồn tại.");
 
 
             jobDto.EmployerID = employer.EmployerID;
@@ -59,12 +60,12 @@ namespace SWork.Service.Services
                 // so sánh wallet.balana >= subscription.price
                 if (wallet.Balance < subscription.Price)
                 {
-                    throw new Exception("Số dư trong ví không đủ. Vui lòng quét mã để đăng bài");
+                    throw new BadRequestException("Số dư trong ví không đủ. Vui lòng quét mã để đăng bài");
                 }
                 else if (wallet.Balance >= subscription.Price)
                 {
                     var description = $"- {subscription.Price}đ cho đăng bài tuyển dụng với gói '{subscription.SubscriptionName}'";
-                    await _walletService.DeductFromWalletAsync(userId, subscription.Price, "", "Success");
+                    await _walletService.DeductFromWalletAsync(userId, subscription.Price, "", "SUCCESS");
                     job.Status = "ACTIVE";
                     await _unitOfWork.GenericRepository<Job>().InsertAsync(job);
                     await _unitOfWork.SaveChangeAsync();
@@ -81,16 +82,16 @@ namespace SWork.Service.Services
         {
 
             var subscription = await _unitOfWork.GenericRepository<Subscription>().GetFirstOrDefaultAsync(a => a.SubscriptionID == jobdto.SubscriptionID);
-            if (subscription == null) throw new Exception("Gói bài viết không tồn tại.Vui lòng chọn lại!");
+            if (subscription == null) throw new NotFoundException("Gói bài viết không tồn tại.Vui lòng chọn lại!");
 
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == jobId);
-            if (job == null) throw new Exception("Bài viết không tồn tại.");
+            if (job == null) throw new NotFoundException("Bài viết không tồn tại.");
 
-            if (job.Status == "IsActive") throw new Exception("Bài viết đã hết hạn.");
+            if (job.Status == "ISACTIVE") throw new BadRequestException("Bài viết đã hết hạn!");
 
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
 
-            if (job.EmployerID != employer.EmployerID) throw new Exception("Bạn không có quyền chỉnh sửa bài viết này.");
+            if (job.EmployerID != employer.EmployerID) throw new ForbiddenException("Bạn không có quyền chỉnh sửa bài viết này!");
 
 
             await _unitOfWork.BeginTransactionAsync();
@@ -133,13 +134,13 @@ namespace SWork.Service.Services
         public async Task UpdateJobStatusAsync(int jobId, string status)
         {
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == jobId);
-            if (job == null) throw new Exception("Bài viết không tồn tại.");
+            if (job == null) throw new NotFoundException("Bài viết không tồn tại!");
 
-            if (status == null) throw new Exception("Trạng thái không được hỗ trợ.");
+            if (status == null) throw new BadRequestException("Trạng thái không được hỗ trợ!");
 
             var validStatuses = new[] { "ACTIVE", "PENDINGPAYMENT", "EXPIRED", "DELETED" };
             if (!validStatuses.Contains(status))
-                throw new Exception("Trạng thái không được hỗ trợ.");
+                throw new BadRequestException("Trạng thái không được hỗ trợ!");
 
             job.Status = status;
             await _unitOfWork.BeginTransactionAsync();
@@ -159,10 +160,10 @@ namespace SWork.Service.Services
         public async Task DeleteJobAsync(int jobId, string userId)
         {
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == jobId);
-            if (job == null) throw new Exception("Bài viết không tồn tại.");
+            if (job == null) throw new NotFoundException("Bài viết không tồn tại!");
 
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (job.EmployerID != employer.EmployerID) throw new Exception("Bạn không có xóa bài viết này.");
+            if (job.EmployerID != employer.EmployerID) throw new NotFoundException("Bạn không có xóa bài viết này!");
 
             await _unitOfWork.BeginTransactionAsync();
             try
@@ -188,7 +189,7 @@ namespace SWork.Service.Services
         {
             var job = await _unitOfWork.GenericRepository<Job>().GetByIdAsync(jobId);
             if (job == null)
-                throw new Exception("Job not found");
+                throw new NotFoundException("Job not found");
             return job;
         }
         public async Task<Pagination<Job>> SearchJobAsync(JobSearchRequestDTO filter, int jobCategory, int pageIndex, int pageSize)
@@ -204,7 +205,7 @@ namespace SWork.Service.Services
 
             var result = await _unitOfWork.GenericRepository<Job>().GetPaginationAsync(
                 predicate: predicate,
-                includeProperties: " Subscription",
+                includeProperties: "Subscription",
                 pageIndex: pageIndex,
                 pageSize: pageSize,
                 orderBy: job => new
@@ -219,7 +220,7 @@ namespace SWork.Service.Services
         public async Task<Pagination<JobSearchResponseDTO>> GetActiveJobDtosAsync(int pageIndex, int pageSize)
         {
             // B1: Lọc theo Status = "Active"
-            Expression<Func<Job, bool>> predicate = job => job.Status == "Active";
+            Expression<Func<Job, bool>> predicate = job => job.Status == "ACTIVE";
 
             // B2: Gọi hàm gốc lấy danh sách Job (pagination)
             var paginatedJobs = await GetPaginatedJobAsync(
@@ -255,7 +256,7 @@ namespace SWork.Service.Services
         public async Task<Pagination<JobSearchResponseDTO>> GetJobByIdDtosAsync(string userId, int pageIndex, int pageSize)
         {
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (employer == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem danh sách.");
+            if (employer == null) throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem danh sách!");
 
             Expression<Func<Job, bool>> predicate = job => job.EmployerID == employer.EmployerID;
 
@@ -291,7 +292,7 @@ namespace SWork.Service.Services
         {
             // 1. Lấy thông tin student từ userId
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(s => s.UserID == userId);
-            if (student == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem danh sách.");
+            if (student == null) throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem danh sách!");
 
             // 2. Lấy danh sách JobID đã bookmark bởi student
             var bookmarks = await _unitOfWork.GenericRepository<JobBookmark>().GetAllAsync(b => b.StudentID == student.StudentID, null);
@@ -336,7 +337,7 @@ namespace SWork.Service.Services
         {
             // 1. Lấy thông tin employer từ userId
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(e => e.UserID == userId);
-            if (employer == null) throw new Exception("Không tìm thấy thông tin nhà tuyển dụng.");
+            if (employer == null) throw new NotFoundException("Không tìm thấy thông tin nhà tuyển dụng!");
 
             // 2. Lọc danh sách Job theo EmployerID
             Expression<Func<Job, bool>> predicate = job => job.EmployerID == employer.EmployerID;

@@ -34,8 +34,8 @@ namespace SWork.Data.DTO.JobDTO
         public decimal Salary { get; set; }
 
         [Required]
-        [RegularExpression("^(Active|InActive)$", ErrorMessage = "Status must be either 'Active' or 'InActive'.")]
-        public string Status { get; set; } = "InActive";
+        [RegularExpression("^(ACTIVE|INACTIVE)$", ErrorMessage = "Status must be either 'Active' or 'InActive'.")]
+        public string Status { get; set; } = "INACTIVE";
 
         [StringLength(100, ErrorMessage = "Working hours cannot exceed 100 characters.")]
         public string? WorkingHours { get; set; }

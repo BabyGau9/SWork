@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using SWork.Data.DTO;
 using SWork.RepositoryContract.Interfaces;
 using SWork.ServiceContract.Interfaces;
+using SWork.Common.Middleware;
 
 namespace SWork.Service.Services
 {
@@ -36,10 +37,10 @@ namespace SWork.Service.Services
         {
             var user = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == userId);
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (employer == null || user == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi ứng tuyển.");
+            if (employer == null || user == null) throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi ứng tuyển.");
 
             var app = await _unitOfWork.GenericRepository<Application>().GetFirstOrDefaultAsync(a => a.ApplicationID == dto.ApplicationID);
-            if (app == null) throw new Exception("Application không tồn tại");
+            if (app == null) throw new NotFoundException("Application không tồn tại");
 
             var interview = new Interview
             {

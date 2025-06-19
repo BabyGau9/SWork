@@ -8,11 +8,11 @@ namespace SWork.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class StudentController : ControllerBase
+    public class StudentsController : ControllerBase
     {
         private readonly IStudentService _studentService;
 
-        public StudentController(IStudentService studentService)
+        public StudentsController(IStudentService studentService)
         {
             _studentService = studentService;
         }

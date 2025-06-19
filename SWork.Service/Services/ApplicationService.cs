@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Identity;
+using SWork.Common.Middleware;
 using SWork.Data.DTO.ApplicationDTO;
 using SWork.Data.Enum;
 
@@ -21,12 +22,12 @@ namespace SWork.Service.Services
         {
             var user = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == userId);
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (student == null || user == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi ứng tuyển.");
+            if (student == null || user == null) throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi ứng tuyển!");
 
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == apply.JobID);
-            if (job == null) throw new Exception("Công việc không tồn tại. Vui lòng chọn công việc khác để ứng tuyển.");
+            if (job == null) throw new NotFoundException("Công việc không tồn tại. Vui lòng chọn công việc khác để ứng tuyển!");
 
-            if (job.Status == "IsActive") throw new Exception("Công việc đã hết hạn không thể ứng tuyển. Vui lòng chọn công việc khác để ứng tuyển.");
+            if (job.Status == "ISACTIVE") throw new BadRequestException("Công việc đã hết hạn không thể ứng tuyển. Vui lòng chọn công việc khác để ứng tuyển!");
 
             apply.StudentID = student.StudentID;
             apply.Status = "PENDING";
@@ -68,23 +69,23 @@ namespace SWork.Service.Services
             // check user has exist
             var user = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == userId);
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (employer == null || user == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xét duyệt hồ sơ.");
+            if (employer == null || user == null) throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xét duyệt hồ sơ!");
 
             // check application has exist
             var application = await _unitOfWork.GenericRepository<Application>().GetFirstOrDefaultAsync(a => a.ApplicationID == applyDto.ApplicationID);
-            if (application == null) throw new Exception("Hồ sơ không tồn tại");
+            if (application == null) throw new NotFoundException("Hồ sơ không tồn tại!");
 
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(a => a.StudentID == application.StudentID);
             var Astudent = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == student.UserID);
 
             // check this job has exist  
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == application.JobID);
-            if (job.Status == "IsActive") throw new Exception("Bài viết đã hết hạn. Không thể thực hiện xét duyệt hồ sơ.");
+            if (job.Status == "ISACTIVE") throw new BadRequestException("Bài viết đã hết hạn. Không thể thực hiện xét duyệt hồ sơ!");
 
-            if (job.EmployerID != employer.EmployerID) throw new Exception("Bạn không có quyền xét duyệt hồ sơ này");
+            if (job.EmployerID != employer.EmployerID) throw new ForbiddenException("Bạn không có quyền xét duyệt hồ sơ này!");
 
             if (!IsValidStatusTransition(application.Status, applyDto.Status))
-                throw new Exception("Trạng thái xét duyệt không hợp lệ.");
+                throw new BadRequestException("Trạng thái xét duyệt không hợp lệ!");
 
             application.Status = applyDto.Status;
             application.UpdatedAt = DateTime.Now;
@@ -120,7 +121,7 @@ namespace SWork.Service.Services
         {
             // get application
             var application = await _unitOfWork.GenericRepository<Application>().GetFirstOrDefaultAsync(a => a.ApplicationID == applyId);
-            if (application == null) throw new Exception("Hồ sơ không tồn tại");
+            if (application == null) throw new NotFoundException("Hồ sơ không tồn tại!");
 
             // get job
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == application.JobID);
@@ -160,7 +161,7 @@ namespace SWork.Service.Services
             }
             else
             {
-                throw new Exception("Hồ sơ không tồn tại.");
+                throw new NotFoundException("Hồ sơ không tồn tại.");
             }
         }
 
@@ -195,13 +196,13 @@ namespace SWork.Service.Services
             var employer = await _unitOfWork.GenericRepository<Employer>()
                 .GetFirstOrDefaultAsync(e => e.UserID == userId);
             if (employer == null)
-                throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
+                throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
 
             // Lấy Job
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(j => j.JobID == jobId);
 
             if (job == null || job.EmployerID != employer.EmployerID)
-                throw new Exception("Bạn không có quyền xem hồ sơ ứng tuyển cho công việc này.");
+                throw new NotFoundException("Bạn không có quyền xem hồ sơ ứng tuyển cho công việc này.");
 
             // Lọc các application theo JobID
             Expression<Func<Application, bool>> predicate = application => application.JobID == jobId;
@@ -256,7 +257,7 @@ namespace SWork.Service.Services
             var student = await _unitOfWork.GenericRepository<Student>()
                 .GetFirstOrDefaultAsync(e => e.UserID == userId);
             if (student == null)
-                throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
+                throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
 
             // Lọc các application theo JobID
             Expression<Func<Application, bool>> predicate = application => application.StudentID == student.StudentID;

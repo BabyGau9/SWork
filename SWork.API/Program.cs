@@ -11,6 +11,7 @@ using SWork.Common.Helper;
 using SWork.API.DependencyInjection;
 using SWork.Service.CloudinaryService;
 using Microsoft.Extensions.Configuration;
+using SWork.Common.Middleware;
 
 namespace SWork.API
 {
@@ -37,6 +38,9 @@ namespace SWork.API
 
             // Repositories & Services
             builder.Services.AddSWorkDependencies(builder.Configuration);
+
+            //Config handle execption
+            builder.Services.AddTransient<GlobalExceptionHandlerMiddleware>();
 
             // Identity
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -153,6 +157,8 @@ namespace SWork.API
             });
 
             var app = builder.Build();
+
+            app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
             // Swagger works in ALL environments
             app.UseSwagger();
