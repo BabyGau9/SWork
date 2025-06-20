@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +11,7 @@ using SWork.Common.Helper;
 using SWork.API.DependencyInjection;
 using SWork.Service.CloudinaryService;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace SWork.API
 {
@@ -19,6 +20,11 @@ namespace SWork.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Add logging
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
+
             // Get version
             var fullVersion = Assembly.GetExecutingAssembly()
                                       .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
@@ -126,9 +132,16 @@ namespace SWork.API
             // config appsettings.Development
             builder.Configuration
                    .SetBasePath(Directory.GetCurrentDirectory())
-                   .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                   .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
                    .AddEnvironmentVariables();
+
+            // Log cấu hình đã load (chỉ ở môi trường Development)
+            if (builder.Environment.IsDevelopment())
+            {
+                var configLogger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Configuration");
+                LogConfiguration(builder.Configuration, configLogger);
+            }
 
             // config CloundinarySettings
             builder.Services.Configure<CloudinarySettings>(
@@ -139,7 +152,6 @@ namespace SWork.API
 
             // --- Registering AppConfig ---
             builder.Services.Configure<AppConfig>(builder.Configuration.GetSection(AppConfig.SectionName));
-
 
             builder.Services.AddCors(options =>
             {
@@ -153,6 +165,58 @@ namespace SWork.API
             });
 
             var app = builder.Build();
+
+            // Check database connection and apply migrations on startup
+            using (var scope = app.Services.CreateScope())
+            {
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                var dbContext = scope.ServiceProvider.GetRequiredService<SWorkDbContext>();
+                //dbContext.Database.Migrate();
+
+                // Tạo database và tất cả bảng
+                dbContext.Database.EnsureCreated();
+                try
+                {
+                    logger.LogInformation("Checking database connection...");
+
+                    // Retry policy for Docker environment
+                    var retryCount = 0;
+                    var maxRetries = 5;
+                    while (!dbContext.Database.CanConnect() && retryCount < maxRetries)
+                    {
+                        logger.LogWarning("Database not ready yet. Retrying in 5 seconds...");
+                        Thread.Sleep(5000);
+                        retryCount++;
+                       /* // Xóa database cũ (nếu cần)
+                        dbContext.Database.EnsureDeleted();*/
+/*
+                        // Tạo database và tất cả bảng
+                        dbContext.Database.EnsureCreated();*/
+                    }
+
+                    if (dbContext.Database.CanConnect())
+                    {
+                        logger.LogInformation("Database connection successful!");
+
+                        // Apply migrations automatically
+                        logger.LogInformation("Applying pending migrations...");
+                        
+
+                        var appliedMigrations = dbContext.Database.GetAppliedMigrations().ToList();
+                        logger.LogInformation($"Applied migrations: {string.Join(", ", appliedMigrations)}");
+                    }
+                    else
+                    {
+                        logger.LogError("Failed to connect to database after {MaxRetries} attempts!", maxRetries);
+                        throw new InvalidOperationException("Cannot connect to database");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error during database initialization: {Message}", ex.Message);
+                    throw; // Stop app if cannot connect to database
+                }
+            }
 
             // Swagger works in ALL environments
             app.UseSwagger();
@@ -168,7 +232,26 @@ namespace SWork.API
             app.UseCors();
             app.MapControllers();
 
+
             app.Run();
         }
+
+        // Hàm log cấu hình
+        private static void LogConfiguration(IConfiguration config, ILogger logger, string parentKey = "")
+        {
+            foreach (var child in config.GetChildren())
+            {
+                var key = string.IsNullOrEmpty(parentKey) ? child.Key : $"{parentKey}:{child.Key}";
+                if (child.GetChildren().Any())
+                {
+                    LogConfiguration(child, logger, key);
+                }
+                else
+                {
+                    logger.LogInformation("{Key} = {Value}", key, child.Value);
+                }
+            }
+        }
     }
+
 }
