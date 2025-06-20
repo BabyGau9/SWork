@@ -78,7 +78,7 @@ namespace SWork.API.Controllers
                     return Ok(response);
                 }
                 response.IsSuccess = false;
-                response.ErrorMessages.Add("Can not confirm your email");
+                response.ErrorMessages.Add("Không thể xác nhận email của bạn!");
                 response.StatusCode = HttpStatusCode.BadRequest;
                 return BadRequest(response);
             }
@@ -112,7 +112,7 @@ namespace SWork.API.Controllers
                 {
                     StatusCode = HttpStatusCode.Unauthorized,
                     IsSuccess = false,
-                    ErrorMessages = new List<string> { "Please confirm your email before logging in." }
+                    ErrorMessages = new List<string> { "Vui lòng xác nhận email của bạn trước khi đăng nhập!" }
                 };
 
                 return Unauthorized(response);
@@ -132,9 +132,9 @@ namespace SWork.API.Controllers
         public async Task<IActionResult> Logout([FromBody] LogoutRequestDTO dto)
         {
             if (string.IsNullOrEmpty(dto.RefreshToken))
-                return BadRequest("Refresh token is required");
+                return BadRequest("Cần phải có refresh token!");
             await _authService.LogoutAsync(dto.RefreshToken);
-            return Ok(new { message = "Logout successful" });
+            return Ok(new { message = "Đăng xuất thành công" });
         }
     }
 }

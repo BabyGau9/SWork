@@ -40,17 +40,17 @@ namespace SWork.Service.Services
             // Verify user exists and is confirmed
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                throw new KeyNotFoundException($"Người dùng không tồn tại với User ID {userId}!");
             
             if (!user.EmailConfirmed)
-                throw new InvalidOperationException("User email is not confirmed");
+                throw new InvalidOperationException("Email người dùng cần được xác nhận!");
 
             var student = await _studentRepository.GetFirstOrDefaultAsync(
                 s => s.UserID == userId,
                 DefaultIncludes
             );
             if (student == null)
-                throw new KeyNotFoundException($"Student with User ID {userId} not found");
+                throw new KeyNotFoundException($"Ứng viên không tồn tại với User ID {userId}!");
 
             return _mapper.Map<StudentResponseDTO>(student);
         }
@@ -66,19 +66,19 @@ namespace SWork.Service.Services
             // Verify user exists, is confirmed and has Student role
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                throw new KeyNotFoundException($"Người dùng không tồn tại với ID {userId}!");
 
             if (!user.EmailConfirmed)
-                throw new InvalidOperationException("User email is not confirmed");
+                throw new InvalidOperationException("Email người dùng chưa xác nhận!");
 
             var userRoles = await _userManager.GetRolesAsync(user);
             if (!userRoles.Contains("Student"))
-                throw new InvalidOperationException("User does not have Student role");
+                throw new InvalidOperationException("Bạn không có quyền là Ứng viên!");
 
             // Check if student profile already exists
             var existingStudent = await _studentRepository.GetFirstOrDefaultAsync(s => s.UserID == userId);
             if (existingStudent != null)
-                throw new InvalidOperationException($"Student profile already exists for user {userId}");
+                throw new InvalidOperationException($"Ứng viên đã tồn tại với User ID: {userId}!");
 
             var student = _mapper.Map<Student>(studentDto);
             student.UserID = userId;
@@ -93,17 +93,17 @@ namespace SWork.Service.Services
             // Verify user exists and is confirmed
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                throw new KeyNotFoundException($"Ứng viên không tồn tại với ID {userId}!");
 
             if (!user.EmailConfirmed)
-                throw new InvalidOperationException("User email is not confirmed");
+                throw new InvalidOperationException("Email người dùng chưa được xác nhận!");
 
             var student = await _studentRepository.GetByIdAsync(id);
             if (student == null)
-                throw new KeyNotFoundException($"Student with ID {id} not found");
+                throw new KeyNotFoundException($"Ứng viên không tồn tại với ID {id}!");
 
             if (student.UserID != userId)
-                throw new UnauthorizedAccessException("You don't have permission to update this student");
+                throw new UnauthorizedAccessException("Bạn không có quyền truy cập vào Ứng viên này!");
 
             _mapper.Map(studentDto, student);
             _studentRepository.Update(student);
@@ -116,7 +116,7 @@ namespace SWork.Service.Services
         {
             var student = await _studentRepository.GetByIdAsync(id);
             if (student == null)
-                throw new KeyNotFoundException($"Student with ID {id} not found");
+                throw new KeyNotFoundException($"Ứng viên không tồn tại với ID {id}!");
 
             _studentRepository.Delete(student);
             await _unitOfWork.SaveChangeAsync();

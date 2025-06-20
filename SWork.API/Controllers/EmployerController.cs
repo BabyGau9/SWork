@@ -26,7 +26,7 @@ namespace SWork.API.Controllers
         {
             var employer = await _employerService.GetEmployerByIdAsync(id);
             if (employer == null)
-                return NotFound($"Employer with ID {id} not found");
+                return NotFound($"Không tìm thấy nhà tuyển dụng với ID là {id}!");
 
             return Ok(employer);
         }
@@ -40,7 +40,7 @@ namespace SWork.API.Controllers
         {
             var employer = await _employerService.GetEmployerByUserIdAsync(userId);
             if (employer == null)
-                return NotFound($"Employer with User ID {userId} not found");
+                return NotFound($"Không tìm thấy nhà tuyển dụng với USER ID là {userId}!");
 
             return Ok(employer);
         }
@@ -71,7 +71,7 @@ namespace SWork.API.Controllers
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                     ?? User.FindFirst("sub")?.Value;
                 if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("Cannot determine userId from token");
+                    return Unauthorized("Không thể xác định userId từ token!");
                 
                 var employer = await _employerService.CreateEmployerAsync(employerDto, userId);
                 return CreatedAtAction(nameof(GetEmployerById), new { id = employer.EmployerID }, employer);
@@ -96,7 +96,7 @@ namespace SWork.API.Controllers
             {
                 var userId = User.FindFirst("sub")?.Value ?? User.Identity?.Name;
                 if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("Cannot determine userId from token");
+                    return Unauthorized("Không thể xác định userId từ token!");
                 
                 var employer = await _employerService.UpdateEmployerAsync(id, employerDto, userId);
                 return Ok(employer);
@@ -120,7 +120,7 @@ namespace SWork.API.Controllers
         {
             var result = await _employerService.DeleteEmployerAsync(id);
             if (!result)
-                return NotFound($"Employer with ID {id} not found");
+                return NotFound($"Không tìm thấy nhà tuyển dụng với ID là {id}!");
 
             return NoContent();
         }
@@ -147,20 +147,6 @@ namespace SWork.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get employers by location
-        /// </summary>
-        //[HttpGet("location/{location}")]
-        //[Authorize]
-        //public async Task<IActionResult> GetEmployersByLocation(string location)
-        //{
-        //    var employers = await _employerService.GetEmployersByLocationAsync(location);
-        //    return Ok(employers);
-        //}
-
-        /// <summary>
-        /// Get employers by company size
-        /// </summary>
         [HttpGet("size/{size}")]
         [Authorize]
         public async Task<IActionResult> GetEmployersByCompanySize(string size)

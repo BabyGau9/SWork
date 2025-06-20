@@ -148,18 +148,18 @@ namespace SWork.Service.Services
             }
 
             if (user == null)
-                throw new BadHttpRequestException("Username/Email or password is incorrect!");
+                throw new BadHttpRequestException("Username/Email hoặc mật khẩu không đùng!");
 
             var isValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
 
             if (!isValid)
-                throw new BadHttpRequestException("Username/Email or password is incorrect!");
+                throw new BadHttpRequestException("Username/Email hoặc mật khẩu không đúng!");
 
             //if (!user.IsActive)
-            //    throw new BadHttpRequestException("Your account is banned!");
+            //    throw new BadHttpRequestException("Tài khoảng đã bị khóa!");
 
-            //if (!user.EmailConfirmed)
-            //    return null;
+           if (!user.EmailConfirmed)
+                throw new BadHttpRequestException("Vui lòng xác nhận qua Email!");
 
             var token = await GenerateJwtToken(user);
             var refreshToken = await GetRefreshTokenAsync(user);
@@ -182,7 +182,7 @@ namespace SWork.Service.Services
         {
             var token = await _unitOfWork.RefreshTokenRepository.GetRefreshTokenAsync(refreshToken);
             if (token == null)
-                throw new Exception("Invalid refresh token");
+                throw new Exception("Refresh token không hợp lệ!");
             token.Revoked = DateTime.UtcNow;
             await _unitOfWork.SaveChangeAsync();
         }

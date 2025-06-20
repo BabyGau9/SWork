@@ -40,7 +40,7 @@ namespace SWork.API.Controllers
         public async Task<IActionResult> Create([FromBody] SubDTO dto)
         {
             await _subscriptionService.CreateSubscriptionAsync(dto);
-            return Ok("Subscription created successfully.");
+            return Ok("Đã tạo thành công gói đăng ký!");
         }
 
         [HttpPut("{id}")]
@@ -48,7 +48,7 @@ namespace SWork.API.Controllers
         {
             var existing = await _subscriptionService.GetSubscriptionByIdAsync(id);
             if (existing == null)
-                return NotFound("Subscription not found");
+                return NotFound("Không tìm thấy gói đăng ký!");
 
             // Map manually or use AutoMapper before update
             existing.SubscriptionName = dto.SubscriptionName;
@@ -58,14 +58,14 @@ namespace SWork.API.Controllers
             existing.IsActive = dto.IsActive;
 
             await _subscriptionService.UpdateSubscriptionAsync(existing);
-            return Ok("Subscription updated successfully.");
+            return Ok("đã cập nhật thành công gói đăng ký!");
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             await _subscriptionService.DeleteSubscriptionAsync(id);
-            return Ok("Subscription deleted successfully.");
+            return Ok("Đã xóa thành công gói đăng ký!");
         }
     }
 }
