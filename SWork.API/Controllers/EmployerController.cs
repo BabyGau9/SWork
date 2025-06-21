@@ -21,7 +21,6 @@ namespace SWork.API.Controllers
         /// Get employer by ID
         /// </summary>
         [HttpGet("{id}")]
-        [Authorize]
         public async Task<IActionResult> GetEmployerById(int id)
         {
             var employer = await _employerService.GetEmployerByIdAsync(id);

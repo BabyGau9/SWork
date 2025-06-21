@@ -104,27 +104,49 @@ namespace SWork.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO loginRequestDTO)
         {
-            var loginResult = await _authService.LoginAsync(loginRequestDTO);
-
-            if (loginResult == null)
+            if (!ModelState.IsValid)
             {
-                var response = new APIResponse
-                {
-                    StatusCode = HttpStatusCode.Unauthorized,
-                    IsSuccess = false,
-                    ErrorMessages = new List<string> { "Vui lòng xác nhận email của bạn trước khi đăng nhập!" }
-                };
-
-                return Unauthorized(response);
+                return BadRequest(ModelState);
             }
-            var successResponse = new APIResponse
-            {
-                IsSuccess = true,
-                StatusCode = HttpStatusCode.OK,
-                Result = loginResult
-            };
 
-            return Ok(successResponse);
+            var authResult = await _authService.LoginAsync(loginRequestDTO);
+
+            return authResult.Status switch
+            {
+                AuthStatus.Success => Ok(new APIResponse
+                {
+                    IsSuccess = true,
+                    StatusCode = HttpStatusCode.OK,
+                    Result = authResult.LoginResponse
+                }),
+                AuthStatus.UserNotFound => Unauthorized(new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.Unauthorized,
+                    ErrorMessages = new List<string> { authResult.Message }
+                }),
+                AuthStatus.InvalidCredentials => Unauthorized(new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.Unauthorized,
+                    ErrorMessages = new List<string> { authResult.Message }
+                }),
+                AuthStatus.EmailNotConfirmed => new ObjectResult(new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.Forbidden,
+                    ErrorMessages = new List<string> { authResult.Message }
+                })
+                {
+                    StatusCode = StatusCodes.Status403Forbidden
+                },
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ErrorMessages = new List<string> { "Đã có lỗi xảy ra trong quá trình xác thực." }
+                }),
+            };
         }
 
         [HttpPost("logout")]
