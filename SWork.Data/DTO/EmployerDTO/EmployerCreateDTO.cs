@@ -20,10 +20,10 @@ namespace SWork.Data.DTO.EmployerDTO
         [StringLength(100)]
         public string CompanySize { get; set; }
 
-        [StringLength(100)]
+        [StringLength(500)]
         public string? LogoUrl { get; set; }
 
         [StringLength(200)]
         public string Location { get; set; }
     }
-} 
+}

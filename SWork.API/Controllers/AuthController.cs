@@ -1,15 +1,14 @@
 ﻿using System.Net;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SWork.Common.Helper;
+using SWork.Data.DTO.AuthDTO;
+using SWork.Data.DTO.UserDTO;
 using SWork.Data.Entities;
 using SWork.ServiceContract.Interfaces;
-using AutoMapper;
-using SWork.Data.DTO.UserDTO;
-using SWork.Data.DTO.AuthDTO;
 
 namespace SWork.API.Controllers
 {
@@ -119,16 +118,16 @@ namespace SWork.API.Controllers
                     StatusCode = HttpStatusCode.OK,
                     Result = authResult.LoginResponse
                 }),
-                AuthStatus.UserNotFound => Unauthorized(new APIResponse
+                AuthStatus.UserNotFound => BadRequest(new APIResponse
                 {
                     IsSuccess = false,
-                    StatusCode = HttpStatusCode.Unauthorized,
+                    StatusCode = HttpStatusCode.BadRequest,
                     ErrorMessages = new List<string> { authResult.Message }
                 }),
-                AuthStatus.InvalidCredentials => Unauthorized(new APIResponse
+                AuthStatus.InvalidCredentials => BadRequest(new APIResponse
                 {
                     IsSuccess = false,
-                    StatusCode = HttpStatusCode.Unauthorized,
+                    StatusCode = HttpStatusCode.BadRequest,
                     ErrorMessages = new List<string> { authResult.Message }
                 }),
                 AuthStatus.EmailNotConfirmed => new ObjectResult(new APIResponse

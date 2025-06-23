@@ -1,5 +1,3 @@
-using SWork.Data.DTO.AuthDTO;
-
 namespace SWork.Data.DTO.AuthDTO
 {
     public enum AuthStatus
@@ -16,4 +14,4 @@ namespace SWork.Data.DTO.AuthDTO
         public string Message { get; set; }
         public LoginResponseDTO LoginResponse { get; set; }
     }
-} 
+}
