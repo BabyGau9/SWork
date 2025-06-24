@@ -1,8 +1,8 @@
-﻿
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using SWork.Common.Middleware;
 using SWork.Data.DTO.ApplicationDTO;
 using SWork.Data.Enum;
+using SWork.ServiceContract.Interfaces;
 
 namespace SWork.Service.Services
 {
@@ -11,12 +11,14 @@ namespace SWork.Service.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
 
-        public ApplicationService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager)
+        public ApplicationService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
         public async Task<ResponseApplyDTO> CreateApplicationAsync(RequestApplyDTO apply, string userId)
         {
@@ -42,6 +44,19 @@ namespace SWork.Service.Services
                 await _unitOfWork.GenericRepository<Application>().InsertAsync(application);
                 await _unitOfWork.SaveChangeAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Gửi notification cho employer về application mới
+                var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(e => e.EmployerID == job.EmployerID);
+                if (employer != null)
+                {
+                    var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+                    {
+                        UserID = employer.UserID,
+                        Title = "Đơn ứng tuyển mới",
+                        Message = $"Có đơn ứng tuyển mới cho công việc '{job.Title}' từ {user.UserName}"
+                    };
+                    await _notificationService.CreateNotificationAsync(notificationDto);
+                }
 
                 ResponseApplyDTO res = new()
                 {
@@ -87,6 +102,7 @@ namespace SWork.Service.Services
             if (!IsValidStatusTransition(application.Status, applyDto.Status))
                 throw new BadRequestException("Trạng thái xét duyệt không hợp lệ!");
 
+            var oldStatus = application.Status;
             application.Status = applyDto.Status;
             application.UpdatedAt = DateTime.Now;
             await _unitOfWork.BeginTransactionAsync();
@@ -95,6 +111,15 @@ namespace SWork.Service.Services
                 _unitOfWork.GenericRepository<Application>().Update(application);
                 await _unitOfWork.SaveChangeAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Gửi notification cho student về thay đổi status
+                var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+                {
+                    UserID = student.UserID,
+                    Title = "Cập nhật đơn ứng tuyển",
+                    Message = GetStatusUpdateMessage(oldStatus, applyDto.Status, job.Title)
+                };
+                await _notificationService.CreateNotificationAsync(notificationDto);
 
                 ResponseApplyDTO res = new()
                 {
@@ -352,6 +377,19 @@ namespace SWork.Service.Services
             };
             await _unitOfWork.GenericRepository<Interview>().InsertAsync(interview);
             await _unitOfWork.SaveChangeAsync();
+        }
+
+        private string GetStatusUpdateMessage(string oldStatus, string newStatus, string jobTitle)
+        {
+            return newStatus switch
+            {
+                "APPROVED" => $"Đơn ứng tuyển cho công việc '{jobTitle}' đã được chấp nhận!",
+                "REJECTED" => $"Đơn ứng tuyển cho công việc '{jobTitle}' đã bị từ chối.",
+                "WORKING" => $"Bạn đã bắt đầu làm việc cho công việc '{jobTitle}'.",
+                "FINISHED" => $"Công việc '{jobTitle}' đã hoàn thành.",
+                "INVITED" => $"Bạn đã được mời phỏng vấn cho công việc '{jobTitle}'.",
+                _ => $"Trạng thái đơn ứng tuyển cho công việc '{jobTitle}' đã được cập nhật: {newStatus}"
+            };
         }
     }
 }

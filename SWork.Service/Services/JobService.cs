@@ -1,15 +1,17 @@
 ﻿using SWork.Common.Middleware;
 using SWork.Data.DTO.JobDTO;
 using SWork.ServiceContract.ICloudinaryService;
+using SWork.ServiceContract.Interfaces;
 
 namespace SWork.Service.Services
 {
-    public class JobService(IUnitOfWork unitOfWork, IMapper mapper, ICloudinaryImageService cloudinaryImageService, IWalletService walletService) : IJobService
+    public class JobService(IUnitOfWork unitOfWork, IMapper mapper, ICloudinaryImageService cloudinaryImageService, IWalletService walletService, INotificationService notificationService) : IJobService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly ICloudinaryImageService _cloudinaryImageService = cloudinaryImageService;
         private readonly IWalletService _walletService = walletService;
+        private readonly INotificationService _notificationService = notificationService;
         public async Task<Pagination<Job>> GetPaginatedJobAsync(
             int pageIndex,
             int pageSize,
@@ -70,6 +72,9 @@ namespace SWork.Service.Services
                     await _unitOfWork.GenericRepository<Job>().InsertAsync(job);
                     await _unitOfWork.SaveChangeAsync();
                     await _unitOfWork.CommitTransactionAsync();
+
+                    // Gửi notification cho students phù hợp
+                    //await SendJobNotificationToSuitableStudents(job);
                 }
             }
             catch
@@ -409,5 +414,38 @@ namespace SWork.Service.Services
                 PageSize = paginatedJobs.PageSize
             };
         }
+
+        //private async Task SendJobNotificationToSuitableStudents(Job job)
+        //{
+        //    try
+        //    {
+        //        // Lấy danh sách students có thể phù hợp với job
+        //        // Có thể dựa trên location, skills, major, etc.
+        //        var suitableStudents = await _unitOfWork.GenericRepository<Student>()
+        //            .GetAllAsync(s => 
+        //                (string.IsNullOrEmpty(job.Location) || s.Location.Contains(job.Location)) ||
+        //                (string.IsNullOrEmpty(job.Requirements) || s.Skills.Contains(job.Requirements)),
+        //                null);
+
+        //        // Giới hạn số lượng notification để tránh spam
+        //        var studentsToNotify = suitableStudents.Take(50).ToList();
+
+        //        foreach (var student in studentsToNotify)
+        //        {
+        //            var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+        //            {
+        //                UserID = student.UserID,
+        //                Title = "Công việc mới phù hợp",
+        //                Message = $"Có công việc mới phù hợp với bạn: '{job.Title}' tại {job.Location} - {job.Salary:N0} VND"
+        //            };
+        //            await _notificationService.CreateNotificationAsync(notificationDto);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Log error nhưng không throw để không ảnh hưởng đến việc tạo job
+        //        Console.WriteLine($"Error sending job notifications: {ex.Message}");
+        //    }
+        //}
     }
 }

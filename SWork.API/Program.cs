@@ -12,6 +12,7 @@ using SWork.API.DependencyInjection;
 using SWork.Service.CloudinaryService;
 using Microsoft.Extensions.Configuration;
 using SWork.Common.Middleware;
+using SWork.API.Hubs;
 
 namespace SWork.API
 {
@@ -28,6 +29,9 @@ namespace SWork.API
 
             // Add Controllers
             builder.Services.AddControllers();
+
+            // Add SignalR
+            builder.Services.AddSignalR();
 
             // DbContext
             builder.Services.AddDbContext<SWorkDbContext>(options =>
@@ -84,6 +88,21 @@ namespace SWork.API
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+                };
+
+                // Configure JWT Bearer for SignalR
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
@@ -173,6 +192,9 @@ namespace SWork.API
             app.UseAuthorization();
             app.UseCors();
             app.MapControllers();
+
+            // Map SignalR Hub
+            app.MapHub<NotificationHub>("/notificationHub");
 
             app.Run();
         }

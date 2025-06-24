@@ -22,8 +22,9 @@ namespace SWork.Service.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IInterviewRepository _interviewRepository;
         private readonly IApplicationRepository _applicationRepository;
+        private readonly INotificationService _notificationService;
 
-        public InterviewService(IUnitOfWork unitOfWork, IAuthService authService, IMapper mapper, UserManager<ApplicationUser> userManager, IInterviewRepository interviewRepository, IApplicationRepository applicationRepository)
+        public InterviewService(IUnitOfWork unitOfWork, IAuthService authService, IMapper mapper, UserManager<ApplicationUser> userManager, IInterviewRepository interviewRepository, IApplicationRepository applicationRepository, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _authService = authService;
@@ -31,6 +32,7 @@ namespace SWork.Service.Services
             _userManager = userManager;
             _interviewRepository = interviewRepository;
             _applicationRepository = applicationRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<CreateInterviewDTO> CreateInterviewAsync(CreateInterviewDTO dto, string userId)
@@ -54,7 +56,26 @@ namespace SWork.Service.Services
             };
 
             await _unitOfWork.GenericRepository<Interview>().InsertAsync(interview);
+            
+            // Cập nhật status của application sang INVITED
+            app.Status = ApplicationStatus.INVITED.ToString();
+            app.UpdatedAt = DateTime.Now;
+            _unitOfWork.GenericRepository<Application>().Update(app);
+            
             await _unitOfWork.SaveChangeAsync();
+
+            // Gửi notification cho student
+            var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(s => s.StudentID == app.StudentID);
+            if (student != null)
+            {
+                var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+                {
+                    UserID = student.UserID,
+                    Title = "Phỏng vấn mới",
+                    Message = $"Bạn đã được mời phỏng vấn cho công việc. Thời gian: {dto.ScheduledTime:dd/MM/yyyy HH:mm}"
+                };
+                await _notificationService.CreateNotificationAsync(notificationDto);
+            }
 
             return _mapper.Map<CreateInterviewDTO>(interview);
         }
@@ -98,6 +119,7 @@ namespace SWork.Service.Services
             if (interview.Status != InterviewStatus.SCHEDULED)
                 throw new Exception("Chỉ có thể cập nhật các cuộc phỏng vấn đã lên lịch!");
 
+            var oldStatus = interview.Status;
             // Update interview status
             interview.Status = dto.NewStatus;
             await _interviewRepository.UpdateAsync(interview);
@@ -117,6 +139,19 @@ namespace SWork.Service.Services
             _applicationRepository.Update(application);
             await _unitOfWork.SaveChangeAsync();
 
+            // Gửi notification cho student về thay đổi status interview
+            var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(s => s.StudentID == application.StudentID);
+            if (student != null)
+            {
+                var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+                {
+                    UserID = student.UserID,
+                    Title = "Cập nhật phỏng vấn",
+                    Message = GetInterviewStatusMessage(dto.NewStatus, interview.ScheduledTime)
+                };
+                await _notificationService.CreateNotificationAsync(notificationDto);
+            }
+
             return _mapper.Map<InterviewResponseDTO>(interview);
         }
 
@@ -126,6 +161,7 @@ namespace SWork.Service.Services
             if (interview == null)
                 throw new Exception("Không tìm thấy cuộc phỏng vấn nào!");
 
+            var oldStatus = interview.Status;
             // Update interview status
             interview.Status = dto.NewStatus;
             await _interviewRepository.UpdateAsync(interview);
@@ -139,7 +175,33 @@ namespace SWork.Service.Services
             // Lưu thay đổi vào database
             await _unitOfWork.SaveChangeAsync();
 
+            // Gửi notification cho student về thay đổi status interview
+            var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(s => s.StudentID == application.StudentID);
+            if (student != null)
+            {
+                var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+                {
+                    UserID = student.UserID,
+                    Title = "Cập nhật phỏng vấn",
+                    Message = GetInterviewStatusMessage(dto.NewStatus, interview.ScheduledTime)
+                };
+                await _notificationService.CreateNotificationAsync(notificationDto);
+            }
+
             return _mapper.Map<InterviewResponseDTO>(interview);
+        }
+
+        private string GetInterviewStatusMessage(InterviewStatus status, DateTime scheduledTime)
+        {
+            return status switch
+            {
+                InterviewStatus.SCHEDULED => $"Cuộc phỏng vấn đã được lên lịch vào {scheduledTime:dd/MM/yyyy HH:mm}",
+                InterviewStatus.ACCEPTED => "Bạn đã vượt qua cuộc phỏng vấn! Chúc mừng!",
+                InterviewStatus.REJECTED => "Kết quả phỏng vấn chưa đạt yêu cầu. Hãy cố gắng hơn!",
+                InterviewStatus.CANCELLED => "Cuộc phỏng vấn đã bị hủy.",
+                InterviewStatus.COMPLETED => "Cuộc phỏng vấn đã hoàn thành.",
+                _ => $"Trạng thái phỏng vấn đã được cập nhật: {status}"
+            };
         }
     }
 } 
