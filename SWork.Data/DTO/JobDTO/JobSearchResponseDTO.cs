@@ -3,6 +3,7 @@ namespace SWork.Data.DTO.JobDTO
 {
     public class JobSearchResponseDTO
     {
+        public int JobID { get; set; }
         public int? SubscriptionID { get; set; }
         public string Category { get; set; }
         public string Title { get; set; }

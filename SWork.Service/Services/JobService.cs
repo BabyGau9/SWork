@@ -234,6 +234,7 @@ namespace SWork.Service.Services
             // B3: Chuyển đổi từ Job -> JobSearchResponseDTO
             var dtoList = paginatedJobs.Items.Select(job => new JobSearchResponseDTO
             {
+                JobID = job.JobID,
                 SubscriptionID = job.JobID,
                 Category = job.Title,
                 Title = job.Location,
@@ -270,6 +271,7 @@ namespace SWork.Service.Services
 
             var dtoList = paginatedJobs.Items.Select(job => new JobSearchResponseDTO
             {
+                JobID = job.JobID,
                 SubscriptionID = job.JobID,
                 Category = job.Title,
                 Title = job.Location,
@@ -314,6 +316,7 @@ namespace SWork.Service.Services
             // 4. Map sang DTO
             var dtoList = paginatedJobs.Items.Select(job => new JobSearchResponseDTO
             {
+                JobID = job.JobID,
                 SubscriptionID = job.JobID,
                 Category = job.Category,
                 Title = job.Title,
@@ -378,6 +381,7 @@ namespace SWork.Service.Services
             // 3. Map sang DTO
             var dtoList = paginatedJobs.Items.Select(job => new JobSearchResponseDTO
             {
+                JobID = job.JobID,
                 SubscriptionID = job.JobID,
                 Category = job.Category,
                 Title = job.Title,
