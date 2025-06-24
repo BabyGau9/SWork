@@ -1,15 +1,14 @@
 ﻿using System.Net;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SWork.Common.Helper;
+using SWork.Data.DTO.AuthDTO;
+using SWork.Data.DTO.UserDTO;
 using SWork.Data.Entities;
 using SWork.ServiceContract.Interfaces;
-using AutoMapper;
-using SWork.Data.DTO.UserDTO;
-using SWork.Data.DTO.AuthDTO;
 
 namespace SWork.API.Controllers
 {
@@ -78,7 +77,7 @@ namespace SWork.API.Controllers
                     return Ok(response);
                 }
                 response.IsSuccess = false;
-                response.ErrorMessages.Add("Can not confirm your email");
+                response.ErrorMessages.Add("Không thể xác nhận email của bạn!");
                 response.StatusCode = HttpStatusCode.BadRequest;
                 return BadRequest(response);
             }
@@ -104,27 +103,49 @@ namespace SWork.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO loginRequestDTO)
         {
-            var loginResult = await _authService.LoginAsync(loginRequestDTO);
-
-            if (loginResult == null)
+            if (!ModelState.IsValid)
             {
-                var response = new APIResponse
-                {
-                    StatusCode = HttpStatusCode.Unauthorized,
-                    IsSuccess = false,
-                    ErrorMessages = new List<string> { "Please confirm your email before logging in." }
-                };
-
-                return Unauthorized(response);
+                return BadRequest(ModelState);
             }
-            var successResponse = new APIResponse
-            {
-                IsSuccess = true,
-                StatusCode = HttpStatusCode.OK,
-                Result = loginResult
-            };
 
-            return Ok(successResponse);
+            var authResult = await _authService.LoginAsync(loginRequestDTO);
+
+            return authResult.Status switch
+            {
+                AuthStatus.Success => Ok(new APIResponse
+                {
+                    IsSuccess = true,
+                    StatusCode = HttpStatusCode.OK,
+                    Result = authResult.LoginResponse
+                }),
+                AuthStatus.UserNotFound => BadRequest(new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.BadRequest,
+                    ErrorMessages = new List<string> { authResult.Message }
+                }),
+                AuthStatus.InvalidCredentials => BadRequest(new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.BadRequest,
+                    ErrorMessages = new List<string> { authResult.Message }
+                }),
+                AuthStatus.EmailNotConfirmed => new ObjectResult(new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.Forbidden,
+                    ErrorMessages = new List<string> { authResult.Message }
+                })
+                {
+                    StatusCode = StatusCodes.Status403Forbidden
+                },
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new APIResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ErrorMessages = new List<string> { "Đã có lỗi xảy ra trong quá trình xác thực." }
+                }),
+            };
         }
 
         [HttpPost("logout")]
@@ -132,9 +153,9 @@ namespace SWork.API.Controllers
         public async Task<IActionResult> Logout([FromBody] LogoutRequestDTO dto)
         {
             if (string.IsNullOrEmpty(dto.RefreshToken))
-                return BadRequest("Refresh token is required");
+                return BadRequest("Cần phải có refresh token!");
             await _authService.LogoutAsync(dto.RefreshToken);
-            return Ok(new { message = "Logout successful" });
+            return Ok(new { message = "Đăng xuất thành công" });
         }
     }
 }

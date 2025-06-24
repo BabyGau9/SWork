@@ -136,38 +136,32 @@ namespace SWork.Service.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-        public async Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequestDTO)
+        public async Task<AuthResultDTO> LoginAsync(LoginRequestDTO loginRequestDTO)
         {
-            // Try to find user by email first
-            var user = await _userManager.FindByEmailAsync(loginRequestDTO.UsernameOrEmail);
-            
-            // If not found by email, try to find by username
+            var user = await _userManager.FindByEmailAsync(loginRequestDTO.UsernameOrEmail) ?? await _userManager.FindByNameAsync(loginRequestDTO.UsernameOrEmail);
+
             if (user == null)
             {
-                user = await _userManager.FindByNameAsync(loginRequestDTO.UsernameOrEmail);
+                return new AuthResultDTO { Status = AuthStatus.UserNotFound, Message = "Tài khoản không tồn tại." };
             }
 
-            if (user == null)
-                throw new BadHttpRequestException("Username/Email or password is incorrect!");
-
             var isValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
-
             if (!isValid)
-                throw new BadHttpRequestException("Username/Email or password is incorrect!");
+            {
+                return new AuthResultDTO { Status = AuthStatus.InvalidCredentials, Message = "Tên đăng nhập hoặc mật khẩu không chính xác." };
+            }
 
-            //if (!user.IsActive)
-            //    throw new BadHttpRequestException("Your account is banned!");
-
-            //if (!user.EmailConfirmed)
-            //    return null;
+            if (!user.EmailConfirmed)
+            {
+                return new AuthResultDTO { Status = AuthStatus.EmailNotConfirmed, Message = "Vui lòng xác thực email của bạn trước khi đăng nhập." };
+            }
 
             var token = await GenerateJwtToken(user);
             var refreshToken = await GetRefreshTokenAsync(user);
             var userDTO = _mapper.Map<UserDTO>(user);
-
             var role = await _userManager.GetRolesAsync(user);
 
-            LoginResponseDTO responseDTO = new()
+            var loginResponse = new LoginResponseDTO
             {
                 User = userDTO,
                 Token = token,
@@ -175,14 +169,14 @@ namespace SWork.Service.Services
                 Role = role
             };
 
-            return responseDTO;
+            return new AuthResultDTO { Status = AuthStatus.Success, LoginResponse = loginResponse };
         }
 
         public async Task LogoutAsync(string refreshToken)
         {
             var token = await _unitOfWork.RefreshTokenRepository.GetRefreshTokenAsync(refreshToken);
             if (token == null)
-                throw new Exception("Invalid refresh token");
+                throw new Exception("Refresh token không hợp lệ!");
             token.Revoked = DateTime.UtcNow;
             await _unitOfWork.SaveChangeAsync();
         }

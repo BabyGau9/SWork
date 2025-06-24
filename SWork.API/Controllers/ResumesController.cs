@@ -61,11 +61,11 @@ namespace SWork.API.Controllers
             try
             {
                 await _resumeService.DeleteResumeAsync(id, userId);
-                return Ok("Resume was deleted successfully.");
+                return Ok("Đã xóa CV thành công!");
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}!");
             }
         }
 

@@ -172,6 +172,10 @@ namespace SWork.Data.Models
             modelBuilder.Entity<WalletTransaction>()
                 .Property(w => w.Amount)
                 .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Interview>()
+                .Property(i => i.Status)
+                .HasConversion<string>();
         }
     }
 }

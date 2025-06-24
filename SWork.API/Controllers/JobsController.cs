@@ -52,7 +52,7 @@ namespace SWork.API.Controllers
             try
             {
                 await _jobService.CreateJobAsync(dto, userId);
-                return Ok("Job created successfully.");
+                return Ok("Công việc được tạo thành công!");
             }
             catch (Exception ex)
             {
@@ -69,7 +69,7 @@ namespace SWork.API.Controllers
             {
                 await _jobService.UpdateJobAsync(id, dto, userId);
 
-                return Ok("Job updated successfully.");
+                return Ok("Cập nhật công việc thành công!");
             }
             catch (Exception ex)
             {
@@ -84,7 +84,7 @@ namespace SWork.API.Controllers
             try
             {
                 await _jobService.DeleteJobAsync(id, userId);
-                return Ok("Job deleted successfully.");
+                return Ok("Đã xóa công việc thành công!");
             }
             catch (Exception ex)
             {

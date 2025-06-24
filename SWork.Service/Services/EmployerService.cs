@@ -26,7 +26,7 @@ namespace SWork.Service
         {
             var employer = await _unitOfWork.GenericRepository<Employer>().GetByIdAsync(id);
             if (employer == null)
-                throw new KeyNotFoundException($"Employer with ID {id} not found");
+                return null;
 
             return _mapper.Map<EmployerResponseDTO>(employer);
         }
@@ -35,16 +35,16 @@ namespace SWork.Service
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                throw new KeyNotFoundException($"Không tìm thấy người dùng với USER ID {userId}!");
 
             if (!user.EmailConfirmed)
-                throw new InvalidOperationException("User email is not confirmed");
+                throw new InvalidOperationException("Email người dùng chưa được xác nhận!");
 
             var employer = await _employerRepository.GetFirstOrDefaultAsync(
                 s => s.UserID == userId
                 );
             if (employer == null)
-                throw new KeyNotFoundException($"Student with User ID {userId} not found");
+                throw new KeyNotFoundException($"Không tìm thấy nhà tuyển dụng với USER ID {userId}!");
 
             return _mapper.Map<EmployerResponseDTO>(employer);
         }
@@ -55,30 +55,6 @@ namespace SWork.Service
             return employers.Select(e => _mapper.Map<EmployerResponseDTO>(e));
         }
 
-        //public async Task<EmployerResponseDTO> CreateEmployerAsync(EmployerCreateDTO employerDto, string userId)
-        //{
-        //    var user = await _userManager.FindByIdAsync(userId);
-        //    if (user == null)
-        //        throw new KeyNotFoundException($"User with ID {userId} not found");
-        //    if (!user .EmailConfirmed)
-        //        throw new InvalidOperationException("User email is not confirmed");
-
-        //    var userRoles = await _userManager.GetRolesAsync(user);
-        //    if (!userRoles.Contains("Employer"))
-        //        throw new InvalidOperationException("User does not have Employer role");
-
-        //    var existingEmployer = await _employerRepository.GetFirstOrDefaultAsync(e => e.UserID == userId);
-        //    if (existingEmployer != null)
-        //        throw new InvalidOperationException("Employer already exists for this user");
-
-        //    var employer = _mapper.Map<Employer>(employerDto);
-        //    employer.UserID = userId;
-        //    await _employerRepository.InsertAsync(employer);
-        //    await _unitOfWork.SaveChangeAsync();
-
-        //    return _mapper.Map<EmployerResponseDTO>(employer);
-        //}
-
         public async Task<EmployerResponseDTO> CreateEmployerAsync(EmployerCreateDTO employerDto, string userId)
         {
             // Validate input
@@ -86,19 +62,19 @@ namespace SWork.Service
                 throw new ArgumentNullException(nameof(employerDto));
 
             if (string.IsNullOrWhiteSpace(employerDto.CompanyName))
-                throw new ArgumentException("Company name is required");
+                throw new ArgumentException("Không được để trống tên công ty!");
 
             // Validate user
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                throw new KeyNotFoundException($"Không tìm thấy người dùng với USER ID {userId}!");
 
             if (!user.EmailConfirmed)
-                throw new InvalidOperationException("User email is not confirmed");
+                throw new InvalidOperationException("Email người dùng chưa được xác nhận!");
 
             var userRoles = await _userManager.GetRolesAsync(user);
             if (!userRoles.Contains("Employer"))
-                throw new InvalidOperationException("User does not have Employer role");
+                throw new InvalidOperationException("Người dùng không có vai trò là nhà tuyển dụng!");
 
             // Check if employer already exists
             var existingEmployer = await _employerRepository.GetFirstOrDefaultAsync(e => e.UserID == userId);
@@ -128,17 +104,17 @@ namespace SWork.Service
             // Verify user exists and is confirmed
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
-                throw new KeyNotFoundException($"User with ID {userId} not found");
+                throw new KeyNotFoundException($"Người dùng không tồn tại User ID {userId} !");
 
             if (!user.EmailConfirmed)
-                throw new InvalidOperationException("User email is not confirmed");
+                throw new InvalidOperationException("Email người dùng chưa xác nhận!");
 
             var employer = await _employerRepository.GetByIdAsync(id);
             if (employer == null)
-                throw new KeyNotFoundException($"Student with ID {id} not found");
+                throw new KeyNotFoundException($"Nhà tuyển dụng không tồn tại với ID {id}!");
 
             if (employer.UserID != userId)
-                throw new UnauthorizedAccessException("You don't have permission to update this student");
+                throw new UnauthorizedAccessException("Không có quyền truy cập!");
 
             _mapper.Map(employerDto, employer);
             _employerRepository.Update(employer);
@@ -151,7 +127,7 @@ namespace SWork.Service
         {
             var employer = await _employerRepository.GetByIdAsync(id);
             if (employer == null)
-                throw new KeyNotFoundException($"mployer with ID {id} not found");
+                throw new KeyNotFoundException($"Không có nhà tuyển dụng với ID {id}!");
 
             _employerRepository.Delete(employer);
             await _unitOfWork.SaveChangeAsync();
@@ -162,7 +138,7 @@ namespace SWork.Service
         public async Task<IEnumerable<EmployerResponseDTO>> GetEmployersByIndustryAsync(string industry)
         {
             if (string.IsNullOrWhiteSpace(industry))
-                throw new ArgumentException("Industry cannot be empty");
+                throw new ArgumentException("Ngành nghề không được để trống!");
 
             var employers = await _employerRepository.GetAllAsync(
                 e => e.Industry.ToLower().Contains(industry.ToLower()),
@@ -171,22 +147,10 @@ namespace SWork.Service
             return employers.Select(e => _mapper.Map<EmployerResponseDTO>(e));
         }
 
-        //public async Task<IEnumerable<EmployerResponseDTO>> GetEmployersByLocationAsync(string location)
-        //{
-        //    if (string.IsNullOrWhiteSpace(location))
-        //        throw new ArgumentException("Location cannot be empty");
-
-        //    var employers = await _employerRepository.GetAllAsync(
-        //        e => e.Location != null && e.Location.ToLower().Contains(location.ToLower()),
-        //        DefaultIncludes
-        //    );
-        //    return employers.Select(e => _mapper.Map<EmployerResponseDTO>(e));
-        //}
-
         public async Task<IEnumerable<EmployerResponseDTO>> GetEmployersByCompanySizeAsync(string size)
         {
             if (string.IsNullOrWhiteSpace(size))
-                throw new ArgumentException("Company size cannot be empty");
+                throw new ArgumentException("Quy mô không được để trống!");
 
             var employers = await _employerRepository.GetAllAsync(
                 e => e.CompanySize.ToLower().Contains(size.ToLower()),

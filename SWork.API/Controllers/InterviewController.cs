@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using SWork.Data.DTO.InterviewDTO;
 using SWork.ServiceContract.Interfaces;
 using System.Security.Claims;
+using SWork.Common.Helper;
+using System.Net;
 
 namespace SWork.API.Controllers
 {
@@ -22,54 +24,128 @@ namespace SWork.API.Controllers
         [Authorize(Roles = "Employer")]
         public async Task<ActionResult> CreateInterview([FromForm] CreateInterviewDTO dto)
         {
+            var response = new APIResponse();
             try{
                 var employerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var interview = await _interviewService.CreateInterviewAsync(dto, employerId);
-                return Ok(interview);
+                response.Result = interview;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.BadRequest;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi tạo cuộc phỏng vấn.");
+                return BadRequest(response);
             }   
-
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetAll()
+        public async Task<ActionResult<APIResponse>> GetAll()
         {
-            var interviews = await _interviewService.GetAllAsync();
-            return Ok(interviews);
+            var response = new APIResponse();
+            try
+            {
+                var interviews = await _interviewService.GetAllAsync();
+                response.Result = interviews;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.InternalServerError;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi lấy danh sách phỏng vấn.");
+                return StatusCode(500, response);
+            }
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<InterviewResponseDTO>> GetById(int id)
+        public async Task<ActionResult<APIResponse>> GetById(int id)
         {
-            var interview = await _interviewService.GetByIdAsync(id);
-            if (interview == null)
-                return NotFound();
-
-            return Ok(interview);
+            var response = new APIResponse();
+            try
+            {
+                var interview = await _interviewService.GetByIdAsync(id);
+                if (interview == null)
+                {
+                    response.IsSuccess = false;
+                    response.StatusCode = HttpStatusCode.NotFound;
+                    response.ErrorMessages.Add("Không tìm thấy cuộc phỏng vấn!");
+                    return NotFound(response);
+                }
+                response.Result = interview;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.InternalServerError;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi lấy thông tin phỏng vấn.");
+                return StatusCode(500, response);
+            }
         }
 
         [HttpGet("application/{applicationId}")]
-        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetByApplicationId(int applicationId)
+        public async Task<ActionResult<APIResponse>> GetByApplicationId(int applicationId)
         {
-            var interviews = await _interviewService.GetByApplicationIdAsync(applicationId);
-            return Ok(interviews);
+            var response = new APIResponse();
+            try
+            {
+                var interviews = await _interviewService.GetByApplicationIdAsync(applicationId);
+                response.Result = interviews;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.InternalServerError;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi lấy danh sách phỏng vấn theo đơn ứng tuyển.");
+                return StatusCode(500, response);
+            }
         }
 
         [HttpGet("student/{studentId}")]
-        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetByStudentId(int studentId)
+        public async Task<ActionResult<APIResponse>> GetByStudentId(int studentId)
         {
-            var interviews = await _interviewService.GetByStudentIdAsync(studentId);
-            return Ok(interviews);
+            var response = new APIResponse();
+            try
+            {
+                var interviews = await _interviewService.GetByStudentIdAsync(studentId);
+                response.Result = interviews;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.InternalServerError;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi lấy danh sách phỏng vấn theo sinh viên.");
+                return StatusCode(500, response);
+            }
         }
 
         [HttpGet("employer/{employerId}")]
-        public async Task<ActionResult<IEnumerable<InterviewResponseDTO>>> GetByEmployerId(int employerId)
+        public async Task<ActionResult<APIResponse>> GetByEmployerId(int employerId)
         {
-            var interviews = await _interviewService.GetByEmployerIdAsync(employerId);
-            return Ok(interviews);
+            var response = new APIResponse();
+            try
+            {
+                var interviews = await _interviewService.GetByEmployerIdAsync(employerId);
+                response.Result = interviews;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.InternalServerError;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi lấy danh sách phỏng vấn theo nhà tuyển dụng.");
+                return StatusCode(500, response);
+            }
         }
         /// <summary>
         /// Update Status After Interview (SCHEDULED = 1, ACCEPTED = 2, REJECTED = 3, CANCELLED = 4, COMPLETED = 5, PENDING = 6)
@@ -78,16 +154,22 @@ namespace SWork.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut("{id}/status")]
-        public async Task<ActionResult<InterviewResponseDTO>> UpdateStatus(int id, [FromBody] UpdateInterviewDTO dto)
+        public async Task<ActionResult<APIResponse>> UpdateStatus(int id, [FromBody] UpdateInterviewDTO dto)
         {
+            var response = new APIResponse();
             try
             {
                 var result = await _interviewService.UpdateInterviewStatusAsync(id, dto);
-                return Ok(result);
+                response.Result = result;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.BadRequest;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi cập nhật trạng thái phỏng vấn.");
+                return BadRequest(response);
             }
         }
 
@@ -98,16 +180,22 @@ namespace SWork.API.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [HttpPut("{id}/status-before")]
-        public async Task<ActionResult<InterviewResponseDTO>> UpdateStatusBefore(int id, [FromBody] UpdateInterviewDTO dto)
+        public async Task<ActionResult<APIResponse>> UpdateStatusBefore(int id, [FromBody] UpdateInterviewDTO dto)
         {
+            var response = new APIResponse();
             try
             {
                 var result = await _interviewService.UpdateInterviewStatusBeforeAsync(id, dto);
-                return Ok(result);
+                response.Result = result;
+                response.StatusCode = HttpStatusCode.OK;
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                response.IsSuccess = false;
+                response.StatusCode = HttpStatusCode.BadRequest;
+                response.ErrorMessages.Add(ex.Message ?? "Đã xảy ra lỗi khi cập nhật trạng thái phỏng vấn.");
+                return BadRequest(response);
             }
         }
 

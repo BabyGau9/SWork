@@ -46,6 +46,7 @@ namespace SWork.Service.Services
             {
                 ApplicationID = dto.ApplicationID,
                 ScheduledTime = dto.ScheduledTime,
+                Duration_minutes = dto.Duration_minutes,
                 Location = dto.Location,
                 MeetingLink = dto.MeetingLink,
                 Note = dto.Note,
@@ -92,10 +93,10 @@ namespace SWork.Service.Services
         {
             var interview = await _interviewRepository.GetByIdAsync(interviewId);
             if (interview == null)
-                throw new Exception("Interview not found");
+                throw new Exception("Không tìm thấy cuộc phỏng vấn!");
 
             if (interview.Status != InterviewStatus.SCHEDULED)
-                throw new Exception("Can only update scheduled interviews");
+                throw new Exception("Chỉ có thể cập nhật các cuộc phỏng vấn đã lên lịch!");
 
             // Update interview status
             interview.Status = dto.NewStatus;
@@ -104,7 +105,7 @@ namespace SWork.Service.Services
             // Update application status based on interview status
             var application = await _applicationRepository.GetByIdAsync(interview.ApplicationID);
             if (application == null)
-                throw new Exception("Application not found");
+                throw new Exception("Không tìm thấy đơn ứng tuyển nào!");
 
             application.Status = dto.NewStatus switch
             {
@@ -123,7 +124,7 @@ namespace SWork.Service.Services
         {
             var interview = await _interviewRepository.GetByIdAsync(interviewId);
             if (interview == null)
-                throw new Exception("Interview not found");
+                throw new Exception("Không tìm thấy cuộc phỏng vấn nào!");
 
             // Update interview status
             interview.Status = dto.NewStatus;
@@ -132,7 +133,7 @@ namespace SWork.Service.Services
             // Update application status based on interview status
             var application = await _applicationRepository.GetByIdAsync(interview.ApplicationID);
             if (application == null)
-                throw new Exception("Application not found");
+                throw new Exception("Không tìm thấy đơn ứng tuyển nào!");
 
             _applicationRepository.Update(application);
             // Lưu thay đổi vào database
