@@ -107,5 +107,23 @@ namespace SWork.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("search")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchJobs([FromQuery] string? category,[FromQuery] string? title,[FromQuery] string? location,[FromQuery] decimal? minSalary,
+                                                    [FromQuery] decimal? maxSalary,[FromQuery] int pageIndex = 1,
+                                                    [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var result = await _jobService.SearchJobByFieldsAsync(
+                    category, title, location, minSalary, maxSalary, pageIndex, pageSize);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
