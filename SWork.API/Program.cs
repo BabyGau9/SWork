@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using System.Text;
@@ -14,12 +15,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SWork.Common.Middleware;
 using SWork.API.Hubs;
+using System.Threading.Tasks;
 
 namespace SWork.API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -194,50 +196,48 @@ namespace SWork.API
             {
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                 var dbContext = scope.ServiceProvider.GetRequiredService<SWorkDbContext>();
-                //dbContext.Database.Migrate();
-
-                // Tạo database và tất cả bảng
-                dbContext.Database.EnsureCreated();
+                
                 try
                 {
-                    logger.LogInformation("Checking database connection...");
+                    logger.LogInformation("Initializing database...");
 
-                    // Retry policy for Docker environment
-                    var retryCount = 0;
-                    var maxRetries = 5;
-                    while (!dbContext.Database.CanConnect() && retryCount < maxRetries)
+                    // Test database connection with retry logic
+                    var connectionSuccessful = await MigrationHelper.TestDatabaseConnectionAsync(dbContext, logger);
+                    
+                    if (connectionSuccessful)
                     {
-                        logger.LogWarning("Database not ready yet. Retrying in 5 seconds...");
-                        Thread.Sleep(5000);
-                        retryCount++;
-                       /* // Xóa database cũ (nếu cần)
-                        dbContext.Database.EnsureDeleted();*/
-/*
-                        // Tạo database và tất cả bảng
-                        dbContext.Database.EnsureCreated();*/
-                    }
-
-                    if (dbContext.Database.CanConnect())
-                    {
-                        logger.LogInformation("Database connection successful!");
-
-                        // Apply migrations automatically
-                        logger.LogInformation("Applying pending migrations...");
-                        
-
-                        var appliedMigrations = dbContext.Database.GetAppliedMigrations().ToList();
-                        logger.LogInformation($"Applied migrations: {string.Join(", ", appliedMigrations)}");
+                        // Apply migrations
+                        await MigrationHelper.EnsureDatabaseMigratedAsync(dbContext, logger);
+                        logger.LogInformation("Database initialization completed successfully!");
                     }
                     else
                     {
-                        logger.LogError("Failed to connect to database after {MaxRetries} attempts!", maxRetries);
-                        throw new InvalidOperationException("Cannot connect to database");
+                        throw new InvalidOperationException("Cannot connect to database after multiple retry attempts");
                     }
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error during database initialization: {Message}", ex.Message);
-                    throw; // Stop app if cannot connect to database
+                    
+                    // In development, we might want to continue with EnsureCreated as fallback
+                    if (app.Environment.IsDevelopment())
+                    {
+                        logger.LogWarning("Attempting to create database using EnsureCreated as fallback...");
+                        try
+                        {
+                            await dbContext.Database.EnsureCreatedAsync();
+                            logger.LogInformation("Database created using EnsureCreated fallback.");
+                        }
+                        catch (Exception fallbackEx)
+                        {
+                            logger.LogError(fallbackEx, "Fallback database creation also failed: {Message}", fallbackEx.Message);
+                            throw; // Stop app if both methods fail
+                        }
+                    }
+                    else
+                    {
+                        throw; // In production, stop app if cannot connect to database
+                    }
                 }
             }
             app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
