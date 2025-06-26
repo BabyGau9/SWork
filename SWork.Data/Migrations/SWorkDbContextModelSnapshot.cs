@@ -51,19 +51,19 @@ namespace SWork.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "283e65c8-26c5-4b73-bab8-1b986ead6345",
+                            Id = "959d9496-2058-49e4-a38a-9c041cfd7d48",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "08436539-f4dc-4251-8554-44e87ed5464b",
+                            Id = "e6c488ad-188d-454b-bc52-5619ac873e1e",
                             Name = "Employer",
                             NormalizedName = "EMPLOYER"
                         },
                         new
                         {
-                            Id = "73d9b020-9d92-420d-a5e7-6afe5ff8d4c1",
+                            Id = "5fc8db83-a26f-4ddb-bafe-ec7f41979305",
                             Name = "Student",
                             NormalizedName = "STUDENT"
                         });
@@ -428,8 +428,9 @@ namespace SWork.Data.Migrations
                     b.Property<DateTime>("ScheduledTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("InterviewID");
 
@@ -464,7 +465,6 @@ namespace SWork.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Location")
@@ -636,7 +636,6 @@ namespace SWork.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FileURL")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FullName")
@@ -663,7 +662,6 @@ namespace SWork.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ResumeType")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Skills")

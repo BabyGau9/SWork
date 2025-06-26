@@ -2,9 +2,10 @@ version: '3.8'
 
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: buiductrieu/sworkapi:latest
     ports:
       - "8080:80"
     # env_file:
