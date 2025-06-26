@@ -191,55 +191,24 @@ namespace SWork.API
 
             var app = builder.Build();
 
-            // Check database connection and apply migrations on startup
+            // Đảm bảo database và tất cả bảng được tạo/đồng bộ theo migration
             using (var scope = app.Services.CreateScope())
             {
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                 var dbContext = scope.ServiceProvider.GetRequiredService<SWorkDbContext>();
-                
                 try
                 {
-                    logger.LogInformation("Initializing database...");
-
-                    // Test database connection with retry logic
-                    var connectionSuccessful = await MigrationHelper.TestDatabaseConnectionAsync(dbContext, logger);
-                    
-                    if (connectionSuccessful)
-                    {
-                        // Apply migrations
-                        await MigrationHelper.EnsureDatabaseMigratedAsync(dbContext, logger);
-                        logger.LogInformation("Database initialization completed successfully!");
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("Cannot connect to database after multiple retry attempts");
-                    }
+                    logger.LogInformation("Applying migrations (if any) to ensure database schema is up to date...");
+                    dbContext.Database.Migrate();
+                    logger.LogInformation("Database is up to date!");
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error during database initialization: {Message}", ex.Message);
-                    
-                    // In development, we might want to continue with EnsureCreated as fallback
-                    if (app.Environment.IsDevelopment())
-                    {
-                        logger.LogWarning("Attempting to create database using EnsureCreated as fallback...");
-                        try
-                        {
-                            await dbContext.Database.EnsureCreatedAsync();
-                            logger.LogInformation("Database created using EnsureCreated fallback.");
-                        }
-                        catch (Exception fallbackEx)
-                        {
-                            logger.LogError(fallbackEx, "Fallback database creation also failed: {Message}", fallbackEx.Message);
-                            throw; // Stop app if both methods fail
-                        }
-                    }
-                    else
-                    {
-                        throw; // In production, stop app if cannot connect to database
-                    }
+                    logger.LogError(ex, "Error during database migration: {Message}", ex.Message);
+                    throw;
                 }
             }
+
             app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
             // Swagger works in ALL environments
