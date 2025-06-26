@@ -8,11 +8,11 @@ namespace SWork.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class StudentController : ControllerBase
+    public class StudentsController : ControllerBase
     {
         private readonly IStudentService _studentService;
 
-        public StudentController(IStudentService studentService)
+        public StudentsController(IStudentService studentService)
         {
             _studentService = studentService;
         }
@@ -26,7 +26,7 @@ namespace SWork.API.Controllers
         {
             var student = await _studentService.GetStudentByIdAsync(id);
             if (student == null)
-                return NotFound($"Student with ID {id} not found");
+                return NotFound($"Không tìm thấy sinh viên có ID là {id}!");
 
             return Ok(student);
         }
@@ -40,7 +40,7 @@ namespace SWork.API.Controllers
         {
             var student = await _studentService.GetStudentByUserIdAsync(userId);
             if (student == null)
-                return NotFound($"Student with User ID {userId} not found");
+                return NotFound($"Không tìm thấy sinh viên có User ID {userId}!");
 
             return Ok(student);
         }
@@ -74,7 +74,7 @@ namespace SWork.API.Controllers
                 Console.WriteLine($"userId: {userId}");
                 Console.WriteLine($"Token: {Request.Headers["Authorization"]}");
                 if (string.IsNullOrEmpty(userId))
-                    return Unauthorized($"Cannot determine userId from token. Token: {Request.Headers["Authorization"]}");
+                    return Unauthorized($"Không thể xác định userId từ token! Token: {Request.Headers["Authorization"]}");
                 var student = await _studentService.CreateStudentAsync(studentDto, userId);
                 return CreatedAtAction(nameof(GetStudentById), new { id = student.StudentID }, student);
             }
@@ -98,7 +98,7 @@ namespace SWork.API.Controllers
             {
                 var userId = User.FindFirst("sub")?.Value ?? User.Identity?.Name;
                 if (string.IsNullOrEmpty(userId))
-                    return Unauthorized("Cannot determine userId from token");
+                    return Unauthorized("Không thể xác định userId từ token!");
                 var student = await _studentService.UpdateStudentAsync(id, studentDto, userId);
                 return Ok(student);
             }
@@ -121,7 +121,7 @@ namespace SWork.API.Controllers
         {
             var result = await _studentService.DeleteStudentAsync(id);
             if (!result)
-                return NotFound($"Student with ID {id} not found");
+                return NotFound($"Không tìm thấy sinh viên với ID là {id}!");
 
             return NoContent();
         }

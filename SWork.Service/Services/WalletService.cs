@@ -1,4 +1,5 @@
 ﻿
+using SWork.Common.Middleware;
 using SWork.Data.DTO.Wallet.ManagementWalletDTO;
 
 namespace SWork.Service.Services
@@ -70,8 +71,6 @@ namespace SWork.Service.Services
             }
         }
 
-
-
         public async Task<bool> DeductFromWalletAsync(string userId, decimal amount, string? description, string? transactionType)
         {
             if (amount <= 0)
@@ -141,7 +140,7 @@ namespace SWork.Service.Services
             var wallet = await walletRepository.GetByIdAsync(walletId);
             if (wallet == null)
             {
-                throw new KeyNotFoundException($"Không tìm thấy ví với ID: {walletId}");
+                throw new NotFoundException($"Không tìm thấy ví với ID: {walletId}");
             }
 
             decimal oldBalance = wallet.Balance;

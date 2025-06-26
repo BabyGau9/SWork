@@ -2,6 +2,7 @@
 using Net.payOS.Types;
 using SWork.Data.DTO.Wallet.TransactionDTO;
 using SWork.ServiceContract.Interfaces;
+using SWork.Data.DTO.NotificationDTO;
 
 namespace SWork.API.Controllers
 {
@@ -11,11 +12,13 @@ namespace SWork.API.Controllers
     {
         private readonly IPayOSService _payOsService;
         private readonly ITransactionService _transactionService;
+        private readonly INotificationService _notificationService;
 
-        public PaymentController(ITransactionService transactionService, IPayOSService payOsService)
+        public PaymentController(ITransactionService transactionService, IPayOSService payOsService, INotificationService notificationService)
         {
             _transactionService = transactionService;
             _payOsService = payOsService;
+            _notificationService = notificationService;
         }
 
         [HttpPost("payos/link-payment")]
@@ -51,6 +54,29 @@ namespace SWork.API.Controllers
             try
             {
                 await _payOsService.HandlePaymentWebhook(webhookData);
+                
+                //// Gửi notification dựa trên kết quả thanh toán
+                //if (webhookData.Status == "SUCCESS")
+                //{
+                //    var notificationDto = new CreateNotificationDTO
+                //    {
+                //        UserID = webhookData.CustomerId, // Giả sử CustomerId là UserID
+                //        Title = "Thanh toán thành công",
+                //        Message = $"Giao dịch {webhookData.TransactionId} đã được xử lý thành công với số tiền {webhookData.Amount:N0} VND"
+                //    };
+                //    await _notificationService.CreateNotificationAsync(notificationDto);
+                //}
+                //else if (webhookData.Status == "FAILED")
+                //{
+                //    var notificationDto = new CreateNotificationDTO
+                //    {
+                //        UserID = webhookData.CustomerId,
+                //        Title = "Thanh toán thất bại",
+                //        Message = $"Giao dịch {webhookData.TransactionId} đã thất bại. Vui lòng thử lại."
+                //    };
+                //    await _notificationService.CreateNotificationAsync(notificationDto);
+                //}
+                
                 return Ok();
             }
             catch (Exception ex)

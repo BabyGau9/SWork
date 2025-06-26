@@ -1,6 +1,5 @@
 ﻿
-
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using SWork.Common.Middleware;
 
 namespace SWork.Service.Services
 {
@@ -11,7 +10,7 @@ namespace SWork.Service.Services
         public async Task<Resume> CreateResumeAsync(CreateResumeDTO resumDto, string userID)
         {
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(a => a.UserID == userID);
-            if (student == null) throw new Exception("Bạn cần đăng nhập hoặc đang kí trước khi tạo CV.");
+            if (student == null) throw new NotFoundException("Bạn cần đăng nhập hoặc đang kí trước khi tạo CV!");
 
             resumDto.StudentID = student.StudentID;
 
@@ -27,24 +26,24 @@ namespace SWork.Service.Services
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw new Exception($"Error creating resume: {ex.Message}", ex);
+                throw;
             }
         }
 
         public async Task DeleteResumeAsync(int resumId, string userId)
         {
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (student == null) throw new Exception("Bạn cần đăng nhập hoặc đang kí trước khi tạo CV.");
+            if (student == null) throw new NotFoundException("Bạn cần đăng nhập hoặc đang kí trước khi tạo CV!");
 
             var studentExsit = await _unitOfWork.GenericRepository<Resume>().GetFirstOrDefaultAsync(a => a.StudentID == student.StudentID);
-            if (studentExsit == null) throw new Exception("Bạn không có quyền xóa CV này.");
+            if (studentExsit == null) throw new ForbiddenException("Bạn không có quyền xóa CV này!");
 
             await _unitOfWork.BeginTransactionAsync();
             try
             {
                 var resume = await _unitOfWork.GenericRepository<Resume>().GetByIdAsync(resumId);
                 if (resume == null)
-                    throw new Exception("Resume not found");
+                    throw new NotFoundException("CV không tồn tại!");
 
                 _unitOfWork.GenericRepository<Resume>().Delete(resume);
                 await _unitOfWork.SaveChangeAsync();
@@ -64,7 +63,7 @@ namespace SWork.Service.Services
         {
             var resum = await _unitOfWork.GenericRepository<Resume>().GetByIdAsync(resumId);
             if (resum == null)
-                throw new Exception("Resume not found");
+                throw new NotFoundException("CV không tồn tại!");
             return resum;
         }
 
@@ -88,14 +87,14 @@ namespace SWork.Service.Services
         {
 
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (student == null) throw new Exception("Bạn cần đăng nhập hoặc đang kí trước khi tạo CV.");
+            if (student == null) throw new NotFoundException("Bạn cần đăng nhập hoặc đang kí trước khi tạo CV!");
 
             var studentExsit = await _unitOfWork.GenericRepository<Resume>().GetFirstOrDefaultAsync(a => a.StudentID == student.StudentID);
-            if (studentExsit == null) throw new Exception("Bạn không có quyền chỉnh sửa CV này.");
+            if (studentExsit == null) throw new ForbiddenException("Bạn không có quyền chỉnh sửa CV này!");
 
             var existingResume = await _unitOfWork.GenericRepository<Resume>().GetFirstOrDefaultAsync(a => a.ResumeID == id);
             if (existingResume == null)
-                throw new Exception("CV không tồn tại.");
+                throw new NotFoundException("CV không tồn tại!");
 
             if (!string.IsNullOrWhiteSpace(resumDto.FullName))
                 existingResume.FullName = resumDto.FullName;

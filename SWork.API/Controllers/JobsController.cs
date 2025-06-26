@@ -9,11 +9,11 @@ namespace SWork.API.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
-    public class JobController : Controller
+    public class JobsController : Controller
     {
         private readonly IJobService _jobService;
 
-        public JobController(IJobService jobService)
+        public JobsController(IJobService jobService)
         {
             _jobService = jobService;
         }
@@ -52,7 +52,7 @@ namespace SWork.API.Controllers
             try
             {
                 await _jobService.CreateJobAsync(dto, userId);
-                return Ok("Job created successfully.");
+                return Ok("Công việc được tạo thành công!");
             }
             catch (Exception ex)
             {
@@ -69,7 +69,7 @@ namespace SWork.API.Controllers
             {
                 await _jobService.UpdateJobAsync(id, dto, userId);
 
-                return Ok("Job updated successfully.");
+                return Ok("Cập nhật công việc thành công!");
             }
             catch (Exception ex)
             {
@@ -84,7 +84,7 @@ namespace SWork.API.Controllers
             try
             {
                 await _jobService.DeleteJobAsync(id, userId);
-                return Ok("Job deleted successfully.");
+                return Ok("Đã xóa công việc thành công!");
             }
             catch (Exception ex)
             {
@@ -101,6 +101,24 @@ namespace SWork.API.Controllers
             {
                 var jobs = await _jobService.GetJobsByEmployerIdAsync(userId, pageIndex, pageSize);
                 return Ok(jobs);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("search")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchJobs([FromQuery] string? category,[FromQuery] string? title,[FromQuery] string? location,[FromQuery] decimal? minSalary,
+                                                    [FromQuery] decimal? maxSalary,[FromQuery] int pageIndex = 1,
+                                                    [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var result = await _jobService.SearchJobByFieldsAsync(
+                    category, title, location, minSalary, maxSalary, pageIndex, pageSize);
+
+                return Ok(result);
             }
             catch (Exception ex)
             {

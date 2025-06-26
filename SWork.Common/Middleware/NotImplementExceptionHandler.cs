@@ -27,7 +27,7 @@ namespace SWork.Common.Middleware
 
                 var response = JsonSerializer.Serialize(details);
 
-                httpContext.Response.ContentType = "application/json";
+                httpContext.Response.ContentType = "application/json; charset=utf-8";
 
                 httpContext.Response.StatusCode = StatusCodes.Status501NotImplemented;
 

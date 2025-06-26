@@ -1,7 +1,8 @@
-﻿
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
+using SWork.Common.Middleware;
 using SWork.Data.DTO.ApplicationDTO;
 using SWork.Data.Enum;
+using SWork.ServiceContract.Interfaces;
 
 namespace SWork.Service.Services
 {
@@ -10,23 +11,25 @@ namespace SWork.Service.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
 
-        public ApplicationService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager)
+        public ApplicationService(IUnitOfWork unitOfWork, IMapper mapper, UserManager<ApplicationUser> userManager, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
         public async Task<ResponseApplyDTO> CreateApplicationAsync(RequestApplyDTO apply, string userId)
         {
             var user = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == userId);
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (student == null || user == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi ứng tuyển.");
+            if (student == null || user == null) throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi ứng tuyển!");
 
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == apply.JobID);
-            if (job == null) throw new Exception("Công việc không tồn tại. Vui lòng chọn công việc khác để ứng tuyển.");
+            if (job == null) throw new NotFoundException("Công việc không tồn tại. Vui lòng chọn công việc khác để ứng tuyển!");
 
-            if (job.Status == "IsActive") throw new Exception("Công việc đã hết hạn không thể ứng tuyển. Vui lòng chọn công việc khác để ứng tuyển.");
+            if (job.Status == "ISACTIVE") throw new BadRequestException("Công việc đã hết hạn không thể ứng tuyển. Vui lòng chọn công việc khác để ứng tuyển!");
 
             apply.StudentID = student.StudentID;
             apply.Status = "PENDING";
@@ -41,6 +44,19 @@ namespace SWork.Service.Services
                 await _unitOfWork.GenericRepository<Application>().InsertAsync(application);
                 await _unitOfWork.SaveChangeAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Gửi notification cho employer về application mới
+                var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(e => e.EmployerID == job.EmployerID);
+                if (employer != null)
+                {
+                    var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+                    {
+                        UserID = employer.UserID,
+                        Title = "Đơn ứng tuyển mới",
+                        Message = $"Có đơn ứng tuyển mới cho công việc '{job.Title}' từ {user.UserName}"
+                    };
+                    await _notificationService.CreateNotificationAsync(notificationDto);
+                }
 
                 ResponseApplyDTO res = new()
                 {
@@ -68,24 +84,25 @@ namespace SWork.Service.Services
             // check user has exist
             var user = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == userId);
             var employer = await _unitOfWork.GenericRepository<Employer>().GetFirstOrDefaultAsync(a => a.UserID == userId);
-            if (employer == null || user == null) throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xét duyệt hồ sơ.");
+            if (employer == null || user == null) throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xét duyệt hồ sơ!");
 
             // check application has exist
             var application = await _unitOfWork.GenericRepository<Application>().GetFirstOrDefaultAsync(a => a.ApplicationID == applyDto.ApplicationID);
-            if (application == null) throw new Exception("Hồ sơ không tồn tại");
+            if (application == null) throw new NotFoundException("Hồ sơ không tồn tại!");
 
             var student = await _unitOfWork.GenericRepository<Student>().GetFirstOrDefaultAsync(a => a.StudentID == application.StudentID);
             var Astudent = await _unitOfWork.GenericRepository<ApplicationUser>().GetFirstOrDefaultAsync(a => a.Id == student.UserID);
 
             // check this job has exist  
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == application.JobID);
-            if (job.Status == "IsActive") throw new Exception("Bài viết đã hết hạn. Không thể thực hiện xét duyệt hồ sơ.");
+            if (job.Status == "ISACTIVE") throw new BadRequestException("Bài viết đã hết hạn. Không thể thực hiện xét duyệt hồ sơ!");
 
-            if (job.EmployerID != employer.EmployerID) throw new Exception("Bạn không có quyền xét duyệt hồ sơ này");
+            if (job.EmployerID != employer.EmployerID) throw new ForbiddenException("Bạn không có quyền xét duyệt hồ sơ này!");
 
             if (!IsValidStatusTransition(application.Status, applyDto.Status))
-                throw new Exception("Trạng thái xét duyệt không hợp lệ.");
+                throw new BadRequestException("Trạng thái xét duyệt không hợp lệ!");
 
+            var oldStatus = application.Status;
             application.Status = applyDto.Status;
             application.UpdatedAt = DateTime.Now;
             await _unitOfWork.BeginTransactionAsync();
@@ -94,6 +111,15 @@ namespace SWork.Service.Services
                 _unitOfWork.GenericRepository<Application>().Update(application);
                 await _unitOfWork.SaveChangeAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Gửi notification cho student về thay đổi status
+                var notificationDto = new SWork.Data.DTO.NotificationDTO.CreateNotificationDTO
+                {
+                    UserID = student.UserID,
+                    Title = "Cập nhật đơn ứng tuyển",
+                    Message = GetStatusUpdateMessage(oldStatus, applyDto.Status, job.Title)
+                };
+                await _notificationService.CreateNotificationAsync(notificationDto);
 
                 ResponseApplyDTO res = new()
                 {
@@ -120,7 +146,7 @@ namespace SWork.Service.Services
         {
             // get application
             var application = await _unitOfWork.GenericRepository<Application>().GetFirstOrDefaultAsync(a => a.ApplicationID == applyId);
-            if (application == null) throw new Exception("Hồ sơ không tồn tại");
+            if (application == null) throw new NotFoundException("Hồ sơ không tồn tại!");
 
             // get job
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(a => a.JobID == application.JobID);
@@ -160,7 +186,7 @@ namespace SWork.Service.Services
             }
             else
             {
-                throw new Exception("Hồ sơ không tồn tại.");
+                throw new NotFoundException("Hồ sơ không tồn tại.");
             }
         }
 
@@ -195,13 +221,13 @@ namespace SWork.Service.Services
             var employer = await _unitOfWork.GenericRepository<Employer>()
                 .GetFirstOrDefaultAsync(e => e.UserID == userId);
             if (employer == null)
-                throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
+                throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
 
             // Lấy Job
             var job = await _unitOfWork.GenericRepository<Job>().GetFirstOrDefaultAsync(j => j.JobID == jobId);
 
             if (job == null || job.EmployerID != employer.EmployerID)
-                throw new Exception("Bạn không có quyền xem hồ sơ ứng tuyển cho công việc này.");
+                throw new NotFoundException("Bạn không có quyền xem hồ sơ ứng tuyển cho công việc này.");
 
             // Lọc các application theo JobID
             Expression<Func<Application, bool>> predicate = application => application.JobID == jobId;
@@ -256,7 +282,7 @@ namespace SWork.Service.Services
             var student = await _unitOfWork.GenericRepository<Student>()
                 .GetFirstOrDefaultAsync(e => e.UserID == userId);
             if (student == null)
-                throw new Exception("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
+                throw new NotFoundException("Bạn cần đăng nhập hoặc tạo tài khoản trước khi xem.");
 
             // Lọc các application theo JobID
             Expression<Func<Application, bool>> predicate = application => application.StudentID == student.StudentID;
@@ -351,6 +377,19 @@ namespace SWork.Service.Services
             };
             await _unitOfWork.GenericRepository<Interview>().InsertAsync(interview);
             await _unitOfWork.SaveChangeAsync();
+        }
+
+        private string GetStatusUpdateMessage(string oldStatus, string newStatus, string jobTitle)
+        {
+            return newStatus switch
+            {
+                "APPROVED" => $"Đơn ứng tuyển cho công việc '{jobTitle}' đã được chấp nhận!",
+                "REJECTED" => $"Đơn ứng tuyển cho công việc '{jobTitle}' đã bị từ chối.",
+                "WORKING" => $"Bạn đã bắt đầu làm việc cho công việc '{jobTitle}'.",
+                "FINISHED" => $"Công việc '{jobTitle}' đã hoàn thành.",
+                "INVITED" => $"Bạn đã được mời phỏng vấn cho công việc '{jobTitle}'.",
+                _ => $"Trạng thái đơn ứng tuyển cho công việc '{jobTitle}' đã được cập nhật: {newStatus}"
+            };
         }
     }
 }

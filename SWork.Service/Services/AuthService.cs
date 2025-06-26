@@ -10,7 +10,7 @@ using SWork.Data.DTO.AuthDTO;
 using SWork.Data.DTO.UserDTO;
 using SWork.Data.DTO.Wallet.ManagementWalletDTO;
 using SWork.ServiceContract.Interfaces;
-
+using SWork.Data.DTO.NotificationDTO;
 
 namespace SWork.Service.Services
 {
@@ -20,10 +20,11 @@ namespace SWork.Service.Services
         private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWalletService _walletService;
+        private readonly INotificationService _notificationService;
         //private readonly IEmailService _emailService;
         private readonly IMapper _mapper;
         private readonly RoleManager<IdentityRole> _roleManager;
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IUnitOfWork unitOfWork, IMapper mapper, RoleManager<IdentityRole> roleManager, IWalletService walletService)
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IUnitOfWork unitOfWork, IMapper mapper, RoleManager<IdentityRole> roleManager, IWalletService walletService, INotificationService notificationService)
         {
             _userManager = userManager;
             _configuration = configuration;
@@ -31,7 +32,7 @@ namespace SWork.Service.Services
             _mapper = mapper;
             _roleManager = roleManager;
             _walletService = walletService;
-            
+            _notificationService = notificationService;
         }
 
         public async Task<ApplicationUser> RegisterAsync(UserRegisterDTO dto)
@@ -136,38 +137,32 @@ namespace SWork.Service.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-        public async Task<LoginResponseDTO> LoginAsync(LoginRequestDTO loginRequestDTO)
+        public async Task<AuthResultDTO> LoginAsync(LoginRequestDTO loginRequestDTO)
         {
-            // Try to find user by email first
-            var user = await _userManager.FindByEmailAsync(loginRequestDTO.UsernameOrEmail);
-            
-            // If not found by email, try to find by username
+            var user = await _userManager.FindByEmailAsync(loginRequestDTO.UsernameOrEmail) ?? await _userManager.FindByNameAsync(loginRequestDTO.UsernameOrEmail);
+
             if (user == null)
             {
-                user = await _userManager.FindByNameAsync(loginRequestDTO.UsernameOrEmail);
+                return new AuthResultDTO { Status = AuthStatus.UserNotFound, Message = "Tài khoản không tồn tại." };
             }
 
-            if (user == null)
-                throw new BadHttpRequestException("Username/Email or password is incorrect!");
-
             var isValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
-
             if (!isValid)
-                throw new BadHttpRequestException("Username/Email or password is incorrect!");
+            {
+                return new AuthResultDTO { Status = AuthStatus.InvalidCredentials, Message = "Tên đăng nhập hoặc mật khẩu không chính xác." };
+            }
 
-            //if (!user.IsActive)
-            //    throw new BadHttpRequestException("Your account is banned!");
-
-            //if (!user.EmailConfirmed)
-            //    return null;
+            if (!user.EmailConfirmed)
+            {
+                return new AuthResultDTO { Status = AuthStatus.EmailNotConfirmed, Message = "Vui lòng xác thực email của bạn trước khi đăng nhập." };
+            }
 
             var token = await GenerateJwtToken(user);
             var refreshToken = await GetRefreshTokenAsync(user);
             var userDTO = _mapper.Map<UserDTO>(user);
-
             var role = await _userManager.GetRolesAsync(user);
 
-            LoginResponseDTO responseDTO = new()
+            var loginResponse = new LoginResponseDTO
             {
                 User = userDTO,
                 Token = token,
@@ -175,14 +170,23 @@ namespace SWork.Service.Services
                 Role = role
             };
 
-            return responseDTO;
+            // Gửi notification đăng nhập thành công
+            var notificationDto = new CreateNotificationDTO
+            {
+                UserID = user.Id,
+                Title = "Đăng nhập thành công",
+                Message = $"Chào mừng bạn quay trở lại! Đăng nhập lúc {DateTime.Now:dd/MM/yyyy HH:mm}"
+            };
+            await _notificationService.CreateNotificationAsync(notificationDto);
+
+            return new AuthResultDTO { Status = AuthStatus.Success, LoginResponse = loginResponse };
         }
 
         public async Task LogoutAsync(string refreshToken)
         {
             var token = await _unitOfWork.RefreshTokenRepository.GetRefreshTokenAsync(refreshToken);
             if (token == null)
-                throw new Exception("Invalid refresh token");
+                throw new Exception("Refresh token không hợp lệ!");
             token.Revoked = DateTime.UtcNow;
             await _unitOfWork.SaveChangeAsync();
         }

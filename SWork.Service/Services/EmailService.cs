@@ -34,7 +34,7 @@ namespace SWork.Service.Services
         {
             if (string.IsNullOrWhiteSpace(email))
             {
-                throw new ArgumentException("Email address cannot be empty");
+                throw new ArgumentException("Email không được để trống!");
             }
 
             if (string.IsNullOrWhiteSpace(confirmLink))
@@ -54,7 +54,7 @@ namespace SWork.Service.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to send confirmation email: {ex.Message}", ex);
+                throw new Exception($"Email xác nhận không được gửi: {ex.Message}", ex);
             }
         }
 
