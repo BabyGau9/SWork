@@ -182,7 +182,7 @@ namespace SWork.API
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000")
+                    policy.WithOrigins("https://student-work-fe.vercel.app/")
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
