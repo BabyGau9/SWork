@@ -18,5 +18,6 @@ namespace SWork.Data.DTO.JobDTO
         public string? ImageUrl { get; set; }  
         public DateTime CreatedAt { get; set; } 
         public DateTime UpdatedAt { get; set; }
+        public string? SubscriptionName { get; set; }
     }
 }

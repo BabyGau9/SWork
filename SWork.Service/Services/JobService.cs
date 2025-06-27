@@ -382,18 +382,25 @@ namespace SWork.Service.Services
 
             // 2. Lấy danh sách job theo trang
             var paginatedJobs = await GetPaginatedJobAsync(
-                pageIndex,
-                pageSize,
-                predicate,
-                orderBy: j => j.CreatedAt,
-                isDescending: true
-            );
+          pageIndex,
+          pageSize,
+          predicate
+      );
+
+            // 3. Map sang DTO và sắp xếp theo subscription
+            var subscriptionPriority = new Dictionary<string, int>
+    {
+        { "Enterprise", 1 },
+        { "Featured", 2 },
+        { "Premium", 3 },
+        { "Standard", 4 }
+    };
 
             // 3. Map sang DTO
             var dtoList = paginatedJobs.Items.Select(job => new JobSearchResponseDTO
             {
                 JobID = job.JobID,
-                SubscriptionID = job.JobID,
+                SubscriptionID = job.SubscriptionID, 
                 Category = job.Category,
                 Title = job.Title,
                 CreatedAt = job.CreatedAt,
@@ -402,8 +409,9 @@ namespace SWork.Service.Services
                 Requirements = job.Requirements,
                 Location = job.Location,
                 Salary = job.Salary,
-                WorkingHours = job.WorkingHours
-            }).ToList();
+                WorkingHours = job.WorkingHours,
+                SubscriptionName = job.Subscription?.SubscriptionName 
+            }).OrderBy(dto => dto.SubscriptionName != null && subscriptionPriority.ContainsKey(dto.SubscriptionName)? subscriptionPriority[dto.SubscriptionName]: int.MaxValue).ToList();
 
             // 4. Trả về kết quả
             return new Pagination<JobSearchResponseDTO>
