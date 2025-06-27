@@ -38,8 +38,11 @@ namespace SWork.API
             // Add Controllers
             builder.Services.AddControllers();
 
-            // Add SignalR
-            builder.Services.AddSignalR();
+            // Add SignalR with configuration
+            builder.Services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+            });
 
             // DbContext
             builder.Services.AddDbContext<SWorkDbContext>(options =>
@@ -182,10 +185,21 @@ namespace SWork.API
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("https://student-work-fe.vercel.app/")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy.SetIsOriginAllowed(origin => 
+                    {
+                        var allowedOrigins = new[]
+                        {
+                            "https://student-work-fe.vercel.app",
+                            "http://localhost:3000",
+                            "http://localhost:3001",
+                            "https://localhost:3000",
+                            "https://localhost:3001"
+                        };
+                        return allowedOrigins.Contains(origin) || origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:");
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
                 });
             });
 
@@ -220,13 +234,30 @@ namespace SWork.API
             });
 
             app.UseHttpsRedirection();
+            app.UseCors();
+            
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseCors();
             app.MapControllers();
 
-            // Map SignalR Hub
-            app.MapHub<NotificationHub>("/notificationHub");
+            // Map SignalR Hub with CORS
+            app.MapHub<NotificationHub>("/notificationHub")
+               .RequireCors(policy => policy
+                   .SetIsOriginAllowed(origin => 
+                   {
+                       var allowedOrigins = new[]
+                       {
+                           "https://student-work-fe.vercel.app",
+                           "http://localhost:3000",
+                           "http://localhost:3001",
+                           "https://localhost:3000",
+                           "https://localhost:3001"
+                       };
+                       return allowedOrigins.Contains(origin) || origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:");
+                   })
+                   .AllowAnyHeader()
+                   .AllowAnyMethod()
+                   .AllowCredentials());
 
             app.Run();
         }
