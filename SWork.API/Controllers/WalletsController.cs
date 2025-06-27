@@ -41,7 +41,7 @@ namespace SWork.API.Controllers
         }
 
         [HttpPut("{walletId}")]
-        [Authorize(Roles = "Admin")] // Giới hạn quyền
+ // Giới hạn quyền
         public async Task<IActionResult> UpdateWallet(int walletId, [FromBody] WalletUpdateDTO dto)
         {
             var updated = await _walletService.UpdateWalletAsync(walletId, dto);
