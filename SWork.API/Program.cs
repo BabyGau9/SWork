@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using System.Text;
@@ -11,15 +12,23 @@ using SWork.Common.Helper;
 using SWork.API.DependencyInjection;
 using SWork.Service.CloudinaryService;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SWork.Common.Middleware;
+using SWork.API.Hubs;
+using System.Threading.Tasks;
 
 namespace SWork.API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Add logging
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
+
             // Get version
             var fullVersion = Assembly.GetExecutingAssembly()
                                       .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
@@ -28,6 +37,12 @@ namespace SWork.API
 
             // Add Controllers
             builder.Services.AddControllers();
+
+            // Add SignalR with configuration
+            builder.Services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+            });
 
             // DbContext
             builder.Services.AddDbContext<SWorkDbContext>(options =>
@@ -85,6 +100,21 @@ namespace SWork.API
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
                 };
+
+                // Configure JWT Bearer for SignalR
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             builder.Services.AddAuthorization();
@@ -130,9 +160,16 @@ namespace SWork.API
             // config appsettings.Development
             builder.Configuration
                    .SetBasePath(Directory.GetCurrentDirectory())
-                   .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                   .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
                    .AddEnvironmentVariables();
+
+            // Log cấu hình đã load (chỉ ở môi trường Development)
+            if (builder.Environment.IsDevelopment())
+            {
+                var configLogger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Configuration");
+                LogConfiguration(builder.Configuration, configLogger);
+            }
 
             // config CloundinarySettings
             builder.Services.Configure<CloudinarySettings>(
@@ -144,19 +181,47 @@ namespace SWork.API
             // --- Registering AppConfig ---
             builder.Services.Configure<AppConfig>(builder.Configuration.GetSection(AppConfig.SectionName));
 
-
             builder.Services.AddCors(options =>
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy.SetIsOriginAllowed(origin => 
+                    {
+                        var allowedOrigins = new[]
+                        {
+                            "https://student-work-fe.vercel.app",
+                            "http://localhost:3000",
+                            "http://localhost:3001",
+                            "https://localhost:3000",
+                            "https://localhost:3001"
+                        };
+                        return allowedOrigins.Contains(origin) || origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:");
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
                 });
             });
 
             var app = builder.Build();
+
+            // Đảm bảo database và tất cả bảng được tạo/đồng bộ theo migration
+            using (var scope = app.Services.CreateScope())
+            {
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+                var dbContext = scope.ServiceProvider.GetRequiredService<SWorkDbContext>();
+                try
+                {
+                    logger.LogInformation("Applying migrations (if any) to ensure database schema is up to date...");
+                    dbContext.Database.Migrate();
+                    logger.LogInformation("Database is up to date!");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error during database migration: {Message}", ex.Message);
+                    throw;
+                }
+            }
 
             app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
@@ -169,12 +234,50 @@ namespace SWork.API
             });
 
             app.UseHttpsRedirection();
+            app.UseCors();
+            
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseCors();
             app.MapControllers();
+
+            // Map SignalR Hub with CORS
+            app.MapHub<NotificationHub>("/notificationHub")
+               .RequireCors(policy => policy
+                   .SetIsOriginAllowed(origin => 
+                   {
+                       var allowedOrigins = new[]
+                       {
+                           "https://student-work-fe.vercel.app",
+                           "http://localhost:3000",
+                           "http://localhost:3001",
+                           "https://localhost:3000",
+                           "https://localhost:3001"
+                       };
+                       return allowedOrigins.Contains(origin) || origin.StartsWith("http://localhost:") || origin.StartsWith("https://localhost:");
+                   })
+                   .AllowAnyHeader()
+                   .AllowAnyMethod()
+                   .AllowCredentials());
 
             app.Run();
         }
+
+        // Hàm log cấu hình
+        private static void LogConfiguration(IConfiguration config, ILogger logger, string parentKey = "")
+        {
+            foreach (var child in config.GetChildren())
+            {
+                var key = string.IsNullOrEmpty(parentKey) ? child.Key : $"{parentKey}:{child.Key}";
+                if (child.GetChildren().Any())
+                {
+                    LogConfiguration(child, logger, key);
+                }
+                else
+                {
+                    logger.LogInformation("{Key} = {Value}", key, child.Value);
+                }
+            }
+        }
     }
+
 }

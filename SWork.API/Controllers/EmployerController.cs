@@ -121,7 +121,7 @@ namespace SWork.API.Controllers
             if (!result)
                 return NotFound($"Không tìm thấy nhà tuyển dụng với ID là {id}!");
 
-            return NoContent();
+            return Ok(new { message = "Xóa nhà tuyển dụng thành công!" });
         }
 
         /// <summary>

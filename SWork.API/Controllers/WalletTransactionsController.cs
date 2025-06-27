@@ -27,7 +27,7 @@ namespace SWork.API.Controllers
         public async Task<IActionResult> DeleteTransaction(int transactionId)
         {
             var success = await _transactionService.DeleteTransactionAsync(transactionId);
-            return success ? NoContent() : NotFound();
+            return success ? Ok(new { message = "Xóa giao dịch thành công!" }) : NotFound();
         }
 
         // GET: api/WalletTransactions/5

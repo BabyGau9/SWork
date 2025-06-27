@@ -8,6 +8,7 @@ namespace SWork.Data.Enum
         WORKING,
         REJECTED,
         FINISHED,
-        DELETE
+        DELETE,
+        INVITED
     }
 }

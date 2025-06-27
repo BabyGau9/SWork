@@ -1,5 +1,4 @@
-﻿
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Net.payOS;
 using SWork.Common.Helper;
@@ -9,6 +8,7 @@ using SWork.Service.CloudinaryService;
 using SWork.Service.Services;
 using SWork.ServiceContract.ICloudinaryService;
 using SWork.ServiceContract.Interfaces;
+using SWork.API.Services;
 
 namespace SWork.API.DependencyInjection
 {
@@ -32,6 +32,12 @@ namespace SWork.API.DependencyInjection
             services.AddTransient<IWalletService, WalletService>();
             services.AddTransient<ITransactionService, TransactionService>();
             services.AddTransient<IPayOSService, PayOSService>();
+            services.AddTransient<INotificationService, NotificationService>();
+            services.AddTransient<INotificationHub, NotificationHubService>();
+            
+            // Background Services
+            services.AddHostedService<InterviewReminderService>();
+            
             //Cloudinary
             services.AddScoped<ICloudinaryImageService, CloudinaryImageService>();
 

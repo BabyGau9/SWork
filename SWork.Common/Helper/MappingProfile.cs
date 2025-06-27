@@ -13,6 +13,7 @@ using SWork.Data.DTO.JobBookMarkDTO;
 using SWork.Data.DTO.Wallet.ManagementWalletDTO;
 using SWork.Data.DTO.Wallet.TransactionDTO;
 using SWork.Data.DTO.InterviewDTO;
+using SWork.Data.DTO.NotificationDTO;
 
 namespace SWork.Common.Helper
 {
@@ -97,6 +98,8 @@ namespace SWork.Common.Helper
             CreateMap<WalletTransactionCreateDTO, WalletTransaction>().ReverseMap();
             CreateMap<WalletTransactionResponseDTO, WalletTransaction>().ReverseMap();
 
+            //
+            CreateMap<Notification, NotificationResponseDTO>().ReverseMap();
             CreateMap<CreateInterviewDTO, Interview>()
                 .ForMember(dest => dest.ScheduledTime,
                     opt => opt.MapFrom(src => src.ScheduledTime.ToUniversalTime()))

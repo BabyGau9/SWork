@@ -5,37 +5,52 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # image: buiductrieu/sworkapi:latest
     ports:
       - "8080:80"
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=tcp:sworkdb.database.windows.net,1433;Initial Catalog=sworkdb;Persist Security Info=False;User ID=sqladmin;Password=Trieu@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
+      - ConnectionStrings__DefaultConnection=Server=tcp:sql-server,1433;Initial Catalog=sworkdb;Persist Security Info=False;User ID=sa;Password=Trieu@123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;
       
       # JWT Settings
-      - JWT__Key=${JWT_KEY}
-      - JWT__Issuer=${JWT_ISSUER}
-      - JWT__Audience=${JWT_AUDIENCE}
+      - JWT__Key=q7X5vH!tP3@zM4wKj9bQ*F6sY#eL8uR1
+      - JWT__Issuer=http://localhost:7256
+      - JWT__Audience=http://localhost:7256
       
       # Email Settings
-      - EmailSettings__Email=${EMAIL_ADDRESS}
-      - EmailSettings__Password=${EMAIL_PASSWORD}
-      - EmailSettings__Host=${EMAIL_HOST}
-      - EmailSettings__DisplayName=${EMAIL_DISPLAY_NAME}
-      - EmailSettings__Port=${EMAIL_PORT}
+      - EmailSettings__Email=swork.notify@gmail.com
+      - EmailSettings__Password=fdob bcub jxaa kwxo
+      - EmailSettings__Host=smtp.gmail.com
+      - EmailSettings__DisplayName=Swork
+      - EmailSettings__Port=587
       
       # Cloudinary Settings
-      - CloudinarySettings__Cloudname=${CLOUDINARY_CLOUDNAME}
-      - CloudinarySettings__ApiKey=${CLOUDINARY_API_KEY}
-      - CloudinarySettings__ApiSecret=${CLOUDINARY_API_SECRET}
+      - CloudinarySettings__Cloudname=daegzqvwi
+      - CloudinarySettings__ApiKey=169437546982915
+      - CloudinarySettings__ApiSecret=cYtjB018OIAByRQ1MWPR9zqdfmo
 
       # Azure Key Vault Settings
-      - AzureKeyVault__Name=${AZURE_KEY_VAULT_NAME}
-      - AzureKeyVault__TenantId=${AZURE_TENANT_ID}
-      - AzureKeyVault__ClientId=${AZURE_CLIENT_ID}
-      - AzureKeyVault__ClientSecret=${AZURE_CLIENT_SECRET}
+      - PayOs__ClientID=42042cea-3510-46a7-b49e-6e78533076b5
+      - PayOs__APIKey=9034b55c-e3e0-4a55-9e90-2ae345a94dae
+      - PayOs__ChecksumKey=5b6eacd61b959e0b616ea10859a65ba7ebcd77ef5620c42cfbc60508dfff6add
+      - PayOs__PayOSBaseUrl=https://api-merchant.payos.vn
     restart: unless-stopped
+    depends_on:
+      - mssql
+
+  mssql:
+    container_name: sql-server
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: always
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Trieu@123"
+    ports:
+      - 1433:1433
+    volumes:
+      - sqldata:/var/opt/mssql
 
 volumes:
   sqldata: 

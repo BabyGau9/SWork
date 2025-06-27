@@ -10,7 +10,7 @@ using SWork.Data.DTO.AuthDTO;
 using SWork.Data.DTO.UserDTO;
 using SWork.Data.DTO.Wallet.ManagementWalletDTO;
 using SWork.ServiceContract.Interfaces;
-
+using SWork.Data.DTO.NotificationDTO;
 
 namespace SWork.Service.Services
 {
@@ -20,10 +20,11 @@ namespace SWork.Service.Services
         private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWalletService _walletService;
+        private readonly INotificationService _notificationService;
         //private readonly IEmailService _emailService;
         private readonly IMapper _mapper;
         private readonly RoleManager<IdentityRole> _roleManager;
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IUnitOfWork unitOfWork, IMapper mapper, RoleManager<IdentityRole> roleManager, IWalletService walletService)
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IUnitOfWork unitOfWork, IMapper mapper, RoleManager<IdentityRole> roleManager, IWalletService walletService, INotificationService notificationService)
         {
             _userManager = userManager;
             _configuration = configuration;
@@ -31,7 +32,7 @@ namespace SWork.Service.Services
             _mapper = mapper;
             _roleManager = roleManager;
             _walletService = walletService;
-            
+            _notificationService = notificationService;
         }
 
         public async Task<ApplicationUser> RegisterAsync(UserRegisterDTO dto)
@@ -168,6 +169,15 @@ namespace SWork.Service.Services
                 RefreshToken = refreshToken.Token,
                 Role = role
             };
+
+            // Gửi notification đăng nhập thành công
+            var notificationDto = new CreateNotificationDTO
+            {
+                UserID = user.Id,
+                Title = "Đăng nhập thành công",
+                Message = $"Chào mừng bạn quay trở lại! Đăng nhập lúc {DateTime.Now:dd/MM/yyyy HH:mm}"
+            };
+            await _notificationService.CreateNotificationAsync(notificationDto);
 
             return new AuthResultDTO { Status = AuthStatus.Success, LoginResponse = loginResponse };
         }

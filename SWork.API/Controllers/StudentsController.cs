@@ -123,7 +123,7 @@ namespace SWork.API.Controllers
             if (!result)
                 return NotFound($"Không tìm thấy sinh viên với ID là {id}!");
 
-            return NoContent();
+            return Ok(new { message = "Xóa sinh viên thành công!" });
         }
 
         /// <summary>
