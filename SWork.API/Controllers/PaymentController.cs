@@ -2,23 +2,26 @@
 using Net.payOS.Types;
 using SWork.Data.DTO.Wallet.TransactionDTO;
 using SWork.ServiceContract.Interfaces;
-using SWork.Data.DTO.NotificationDTO;
+using System.Security.Claims;
+
 
 namespace SWork.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class PaymentController : Controller
-    {
+    { 
+        private readonly IWalletService _walletService;
         private readonly IPayOSService _payOsService;
         private readonly ITransactionService _transactionService;
         private readonly INotificationService _notificationService;
 
-        public PaymentController(ITransactionService transactionService, IPayOSService payOsService, INotificationService notificationService)
+        public PaymentController(ITransactionService transactionService, IPayOSService payOsService, INotificationService notificationService, IWalletService walletService)
         {
             _transactionService = transactionService;
             _payOsService = payOsService;
             _notificationService = notificationService;
+            _walletService = walletService;
         }
 
         [HttpPost("payos/link-payment")]
@@ -26,7 +29,8 @@ namespace SWork.API.Controllers
         {
             try
             {
-                var url = await _payOsService.CreatePaymentLink(model);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var url = await _payOsService.CreatePaymentLink(userId, model);
                 return Ok(url);
             }
             catch (Exception ex)
@@ -54,29 +58,14 @@ namespace SWork.API.Controllers
             try
             {
                 await _payOsService.HandlePaymentWebhook(webhookData);
-                
-                //// Gửi notification dựa trên kết quả thanh toán
-                //if (webhookData.Status == "SUCCESS")
-                //{
-                //    var notificationDto = new CreateNotificationDTO
-                //    {
-                //        UserID = webhookData.CustomerId, // Giả sử CustomerId là UserID
-                //        Title = "Thanh toán thành công",
-                //        Message = $"Giao dịch {webhookData.TransactionId} đã được xử lý thành công với số tiền {webhookData.Amount:N0} VND"
-                //    };
-                //    await _notificationService.CreateNotificationAsync(notificationDto);
-                //}
-                //else if (webhookData.Status == "FAILED")
-                //{
-                //    var notificationDto = new CreateNotificationDTO
-                //    {
-                //        UserID = webhookData.CustomerId,
-                //        Title = "Thanh toán thất bại",
-                //        Message = $"Giao dịch {webhookData.TransactionId} đã thất bại. Vui lòng thử lại."
-                //    };
-                //    await _notificationService.CreateNotificationAsync(notificationDto);
-                //}
-                
+                if(webhookData.success == true)
+                {
+                    var amount = webhookData.data.amount;
+                    int transactionID = (int)webhookData.data.orderCode;
+
+                    await _walletService.AddToWalletAsync(transactionID, $"Bạn đã nạp {amount} từ PayOS", "DEPOSIT");
+
+                }
                 return Ok();
             }
             catch (Exception ex)

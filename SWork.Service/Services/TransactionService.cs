@@ -93,7 +93,6 @@ namespace SWork.Service.Services
             var transactions = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
             return _mapper.Map<IEnumerable<WalletTransactionResponseDTO>>(transactions);
         }
-
         private async Task AddTransactionInternalAsync(int walletId, decimal amount, string description, string transactionType)
         {
             var transactionRepository = _unitOfWork.GenericRepository<WalletTransaction>();

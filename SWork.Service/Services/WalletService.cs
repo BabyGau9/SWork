@@ -1,4 +1,5 @@
 ﻿
+using CloudinaryDotNet;
 using SWork.Common.Middleware;
 using SWork.Data.DTO.Wallet.ManagementWalletDTO;
 
@@ -8,11 +9,13 @@ namespace SWork.Service.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly ITransactionService _transactionService;
 
-        public WalletService(IUnitOfWork unitOfWork, IMapper mapper)
+        public WalletService(IUnitOfWork unitOfWork, IMapper mapper, ITransactionService transactionService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _transactionService = transactionService;
         }
 
         public async Task<WalletResponseDTO> CreateWalletAsync(WalletCreateDTO dto)
@@ -36,38 +39,33 @@ namespace SWork.Service.Services
             return _mapper.Map<WalletResponseDTO>(wallet);
         }
 
-        public async Task<bool> AddToWalletAsync(string userId, decimal amount, string description, string transactionType)
+        public async Task<bool> AddToWalletAsync(int transactionId, string description, string transactionType)
         {
-            if (amount <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(amount), "Số tiền nạp phải là số dương.");
-            }
+           var transaction = await _unitOfWork.GenericRepository<WalletTransaction>().GetFirstOrDefaultAsync(a => a.TransactionID == transactionId);
 
-            var walletRepository = _unitOfWork.GenericRepository<Wallet>();
-            var wallet = await walletRepository.GetFirstOrDefaultAsync(w => w.UserID == userId);
-            if (wallet == null)
-            {
-                return false;
-            }
-
-            await _unitOfWork.BeginTransactionAsync();
             try
             {
-                wallet.Balance += amount;
+                var wallet = await _unitOfWork.GenericRepository<Wallet>().GetByIdAsync(transaction.WalletID);
+                if (wallet == null) return true;
+                if(transaction.TransactionType == "PENDING")
+                {
+                    
+                    return true;
+                }
+                
+                wallet.Balance = wallet.Balance + transaction.Amount;
                 wallet.LastUpdated = DateTime.Now;
-                walletRepository.Update(wallet); // Đánh dấu là đã thay đổi
+                _unitOfWork.GenericRepository<Wallet>().Update(wallet);
 
                 // Tạo giao dịch thông qua phương thức nội bộ
-                await AddTransactionInternalAsync(wallet.WalletID, amount, description, transactionType);
+               // await AddTransactionInternalAsync(wallet.WalletID, amount, description, transactionType);
 
                 await _unitOfWork.SaveChangeAsync();
-                await _unitOfWork.CommitTransactionAsync();
                 return true;
             }
             catch (Exception)
             {
-                await _unitOfWork.RollbackTransactionAsync();
-                return false; // Hoặc ném lại ngoại lệ
+                return false;
             }
         }
 
@@ -98,7 +96,7 @@ namespace SWork.Service.Services
                 walletRepository.Update(wallet);
 
                 // Tạo giao dịch thông qua phương thức nội bộ
-                await AddTransactionInternalAsync(wallet.WalletID, amount, description, transactionType);
+             //   await AddTransactionInternalAsync(wallet.WalletID, amount, description, transactionType);
                 return true;
             }
             catch (Exception)
@@ -132,7 +130,6 @@ namespace SWork.Service.Services
             var wallet = await walletRepository.GetFirstOrDefaultAsync(w => w.UserID == userId);
             return _mapper.Map<WalletResponseDTO>(wallet); throw new NotImplementedException();
         }
-
 
         public async Task<WalletResponseDTO> UpdateWalletAsync(int walletId, WalletUpdateDTO updateDto)
         {

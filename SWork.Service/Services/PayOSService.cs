@@ -37,7 +37,7 @@ namespace SWork.Service.Services
             }
         }
 
-        public async Task<string> CreatePaymentLink(WalletTransactionCreateDTO model)
+        public async Task<string> CreatePaymentLink(string userID, WalletTransactionCreateDTO model)
         {
             try
             {
@@ -49,11 +49,11 @@ namespace SWork.Service.Services
 
                 List<ItemData> items = new List<ItemData> { item };
 
-                var baseUrl = "https://momandbabyapp.com"; // show giao dien khi giao dich success/fail
+                var baseUrl = "https://student-work-fe.vercel.app/job/add"; // show giao dien khi giao dich success/fail
 
-                PaymentData paymentData = new PaymentData(transaction.TransactionID,
-                                                            item.price,
-                                                            description,
+                PaymentData paymentData = new PaymentData(orderCode: transaction.TransactionID,
+                                                            amount: item.price,
+                                                            description : description,
                                                             items,
                                                             $"{baseUrl}/cancel",
                                                             $"{baseUrl}/success"
@@ -69,19 +69,23 @@ namespace SWork.Service.Services
 
         public async Task HandlePaymentWebhook(WebhookType webhookData)
         {
+            await _unitOfWork.BeginTransactionAsync();
             try
             {
                 WebhookData data = _payOS.verifyPaymentWebhookData(webhookData);
 
+                var transactionRepo = _unitOfWork.GenericRepository<WalletTransaction>();
+
                 var transaction = await _unitOfWork.GenericRepository<WalletTransaction>()
                                                    .GetFirstOrDefaultAsync(_ => _.TransactionID == data.orderCode);
-                if (transaction is null)
+                if (transaction is null || transaction.TransactionType == "SUCCESS")
                 {
                     return;
                 }
                 transaction.TransactionType = webhookData.success ? "SUCCESS" : "FAIL";
 
-                _unitOfWork.GenericRepository<WalletTransaction>().Update(transaction);
+                transactionRepo.Update(transaction);
+
                 await _unitOfWork.SaveChangeAsync();
                 await _unitOfWork.CommitTransactionAsync();
                // return transactionDTO;

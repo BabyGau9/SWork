@@ -1,5 +1,6 @@
 ﻿
 using SWork.Data.DTO.Wallet.ManagementWalletDTO;
+using SWork.Data.DTO.Wallet.TransactionDTO;
 
 namespace SWork.ServiceContract.Interfaces
 {
@@ -14,7 +15,7 @@ namespace SWork.ServiceContract.Interfaces
         Task<bool> DeleteWalletAsync(int walletId); 
 
         // Các thao tác thay đổi số dư cụ thể
-        Task<bool> AddToWalletAsync(string userId, decimal amount, string description, string transactionType);
+        Task<bool> AddToWalletAsync(int transactionID, string description, string transactionType);
         Task<bool> DeductFromWalletAsync(string userId, decimal amount, string description, string transactionType);
 
     }
