@@ -15,7 +15,7 @@ namespace SWork.ServiceContract.Interfaces
         Task<bool> DeleteWalletAsync(int walletId); 
 
         // Các thao tác thay đổi số dư cụ thể
-        Task<bool> AddToWalletAsync(int transactionID, string description, string transactionType);
+        Task<bool> AddToWalletAsync(long orderCode, string description, string transactionType);
         Task<bool> DeductFromWalletAsync(string userId, decimal amount, string description, string transactionType);
 
     }

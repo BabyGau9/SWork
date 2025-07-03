@@ -10,6 +10,7 @@ namespace SWork.Data.DTO.Wallet.TransactionDTO
         public string TransactionType { get; set; }
         public string Description { get; set; }
 
+        public long OrderCode { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

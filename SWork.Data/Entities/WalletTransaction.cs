@@ -15,6 +15,8 @@ namespace SWork.Data.Entities
         public string Description { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        public long? OrderCode {  get; set; }
+
         // Navigation properties
         [ForeignKey("WalletID")]
         public virtual Wallet Wallet { get; set; }

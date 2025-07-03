@@ -14,6 +14,7 @@ namespace SWork.Service.Services
         private readonly PayOS _payOS;
         private readonly ITransactionService _transactionService;
         private readonly IMapper _mapper;
+
         public PayOSService(IUnitOfWork unitOfWork, PayOS payOS, ITransactionService transactionService, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
@@ -43,7 +44,12 @@ namespace SWork.Service.Services
             {
                 var description = "SWork website";
                 var transaction =await _transactionService.CreateTransactionAsync(model);
-                
+
+                if (transaction == null)
+                {
+                    throw new Exception("Tạo giao dịch không thành công.");
+                }
+
                 //Tạo thông tin sản phẩm để hiển thị ở web thanh toán
                 ItemData item = new ItemData(model.SubscriptionName, 1, (int)model.Amount);
 
@@ -51,7 +57,7 @@ namespace SWork.Service.Services
 
                 var baseUrl = "https://student-work-fe.vercel.app/job/add"; // show giao dien khi giao dich success/fail
 
-                PaymentData paymentData = new PaymentData(orderCode: transaction.TransactionID,
+                PaymentData paymentData = new PaymentData(orderCode: transaction.OrderCode,
                                                             amount: item.price,
                                                             description : description,
                                                             items,
@@ -77,7 +83,7 @@ namespace SWork.Service.Services
                 var transactionRepo = _unitOfWork.GenericRepository<WalletTransaction>();
 
                 var transaction = await _unitOfWork.GenericRepository<WalletTransaction>()
-                                                   .GetFirstOrDefaultAsync(_ => _.TransactionID == data.orderCode);
+                                                   .GetFirstOrDefaultAsync(_ => _.OrderCode == data.orderCode);
                 if (transaction is null || transaction.TransactionType == "SUCCESS")
                 {
                     return;
@@ -96,5 +102,8 @@ namespace SWork.Service.Services
                 throw;
             }
         }
+
+          
+
     }
 }

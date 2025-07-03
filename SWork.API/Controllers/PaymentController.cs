@@ -61,9 +61,10 @@ namespace SWork.API.Controllers
                 if(webhookData.success == true)
                 {
                     var amount = webhookData.data.amount;
-                    int transactionID = (int)webhookData.data.orderCode;
+                    long orderCode = (long)webhookData.data.orderCode;
 
-                    await _walletService.AddToWalletAsync(transactionID, $"Bạn đã nạp {amount} từ PayOS", "DEPOSIT");
+                    
+                    await _walletService.AddToWalletAsync(orderCode, $"Bạn đã nạp {amount} từ PayOS", "DEPOSIT");
 
                 }
                 return Ok();

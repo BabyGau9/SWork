@@ -51,19 +51,19 @@ namespace SWork.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "959d9496-2058-49e4-a38a-9c041cfd7d48",
+                            Id = "234d4b93-86b5-48b1-a0a5-f2254a55b069",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "e6c488ad-188d-454b-bc52-5619ac873e1e",
+                            Id = "642ce713-57e0-4159-bad3-f0cfea07e118",
                             Name = "Employer",
                             NormalizedName = "EMPLOYER"
                         },
                         new
                         {
-                            Id = "5fc8db83-a26f-4ddb-bafe-ec7f41979305",
+                            Id = "e8fe8a5d-92c9-4e6a-b4d2-ea9ab48dbbec",
                             Name = "Student",
                             NormalizedName = "STUDENT"
                         });
@@ -846,6 +846,9 @@ namespace SWork.Data.Migrations
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("OrderCode")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("TransactionType")
                         .IsRequired()

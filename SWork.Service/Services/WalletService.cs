@@ -39,20 +39,18 @@ namespace SWork.Service.Services
             return _mapper.Map<WalletResponseDTO>(wallet);
         }
 
-        public async Task<bool> AddToWalletAsync(int transactionId, string description, string transactionType)
+        public async Task<bool> AddToWalletAsync(long orderCode, string description, string transactionType)
         {
-           var transaction = await _unitOfWork.GenericRepository<WalletTransaction>().GetFirstOrDefaultAsync(a => a.TransactionID == transactionId);
+            
+            var transaction = await _unitOfWork.GenericRepository<WalletTransaction>().GetFirstOrDefaultAsync(a => a.OrderCode == orderCode);
+            if (transaction == null) return true;
 
+  
             try
             {
                 var wallet = await _unitOfWork.GenericRepository<Wallet>().GetByIdAsync(transaction.WalletID);
                 if (wallet == null) return true;
-                if(transaction.TransactionType == "PENDING")
-                {
-                    
-                    return true;
-                }
-                
+
                 wallet.Balance = wallet.Balance + transaction.Amount;
                 wallet.LastUpdated = DateTime.Now;
                 _unitOfWork.GenericRepository<Wallet>().Update(wallet);

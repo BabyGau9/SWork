@@ -21,5 +21,7 @@ namespace SWork.Data.DTO.Wallet.TransactionDTO
 
         [StringLength(100)]
         public string BuyerName {  get; set; }
+
+        public long OrderCode { get; set; }
     }
 }

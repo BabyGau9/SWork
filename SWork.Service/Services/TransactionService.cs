@@ -7,6 +7,7 @@ namespace SWork.Service.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+
         public TransactionService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
@@ -15,10 +16,11 @@ namespace SWork.Service.Services
         public async Task<WalletTransactionResponseDTO> CreateTransactionAsync(WalletTransactionCreateDTO createDto)
         {
          
-
+            createDto.OrderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(); ;
             await _unitOfWork.BeginTransactionAsync();
             try
             {
+               
                 var transaction = _mapper.Map<WalletTransaction>(createDto);
                 transaction.CreatedAt = DateTime.Now;
                 transaction.TransactionType = "PENDING";
