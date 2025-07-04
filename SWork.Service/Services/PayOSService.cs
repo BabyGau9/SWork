@@ -1,7 +1,6 @@
 ﻿
 
 // create an alias for the PayOs class from the Net . payOs namesapce
-using Microsoft.Extensions.Logging;
 using Net.payOS;
 using Net.payOS.Types;
 using SWork.Data.DTO.Wallet.TransactionDTO;
@@ -43,7 +42,7 @@ namespace SWork.Service.Services
             try
             {
                 var description = "SWork website";
-                var transaction =await _transactionService.CreateTransactionAsync(model);
+                var transaction = await _transactionService.CreateTransactionAsync(model);
 
                 if (transaction == null)
                 {
@@ -55,14 +54,14 @@ namespace SWork.Service.Services
 
                 List<ItemData> items = new List<ItemData> { item };
 
-                var baseUrl = "https://student-work-fe.vercel.app/job/add"; // show giao dien khi giao dich success/fail
+                var baseUrl = "https://www.swork.website/job/add"; // show giao dien khi giao dich success/fail
 
                 PaymentData paymentData = new PaymentData(orderCode: transaction.OrderCode,
                                                             amount: item.price,
-                                                            description : description,
+                                                            description: description,
                                                             items,
-                                                            $"{baseUrl}/cancel",
-                                                            $"{baseUrl}/success"
+                                                            $"{baseUrl}",
+                                                            $"{baseUrl}"
                                                          );
                 CreatePaymentResult createPayment = await _payOS.createPaymentLink(paymentData);
                 return createPayment.checkoutUrl;
@@ -94,7 +93,7 @@ namespace SWork.Service.Services
 
                 await _unitOfWork.SaveChangeAsync();
                 await _unitOfWork.CommitTransactionAsync();
-               // return transactionDTO;
+                // return transactionDTO;
             }
             catch
             {
@@ -103,7 +102,7 @@ namespace SWork.Service.Services
             }
         }
 
-          
+
 
     }
 }

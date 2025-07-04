@@ -1,21 +1,17 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using System.Reflection;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
-using System.Reflection;
-using System.Text;
 using Microsoft.OpenApi.Models;
+using SWork.API.DependencyInjection;
+using SWork.API.Hubs;
+using SWork.Common.Helper;
+using SWork.Common.Middleware;
 using SWork.Data.Entities;
 using SWork.Data.Models;
-using SWork.Common.Helper;
-using SWork.API.DependencyInjection;
 using SWork.Service.CloudinaryService;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using SWork.Common.Middleware;
-using SWork.API.Hubs;
-using System.Threading.Tasks;
 
 namespace SWork.API
 {
@@ -185,11 +181,12 @@ namespace SWork.API
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.SetIsOriginAllowed(origin => 
+                    policy.SetIsOriginAllowed(origin =>
                     {
                         var allowedOrigins = new[]
                         {
                             "https://student-work-fe.vercel.app",
+                            "https://www.swork.website",
                             "http://localhost:3000",
                             "http://localhost:3001",
                             "https://localhost:3000",
@@ -235,7 +232,7 @@ namespace SWork.API
 
             app.UseHttpsRedirection();
             app.UseCors();
-            
+
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
@@ -243,7 +240,7 @@ namespace SWork.API
             // Map SignalR Hub with CORS
             app.MapHub<NotificationHub>("/notificationHub")
                .RequireCors(policy => policy
-                   .SetIsOriginAllowed(origin => 
+                   .SetIsOriginAllowed(origin =>
                    {
                        var allowedOrigins = new[]
                        {
