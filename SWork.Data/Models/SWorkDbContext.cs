@@ -144,17 +144,19 @@ namespace SWork.Data.Models
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Review configuration
+
+
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.Reviewer)
                 .WithMany()
                 .HasForeignKey(r => r.Reviewer_id)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict); 
 
             modelBuilder.Entity<Review>()
-                .HasOne(r => r.Application)
-                .WithMany(a => a.Reviews)
-                .HasForeignKey(r => r.ApplicationID)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(r => r.Reviewee)
+                .WithMany()
+                .HasForeignKey(r => r.Reviewee_id)
+                .OnDelete(DeleteBehavior.Restrict); 
 
             // Configure decimal precision
             modelBuilder.Entity<Job>()
@@ -176,6 +178,7 @@ namespace SWork.Data.Models
             modelBuilder.Entity<Interview>()
                 .Property(i => i.Status)
                 .HasConversion<string>();
+
         }
     }
 }
