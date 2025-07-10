@@ -51,19 +51,19 @@ namespace SWork.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "234d4b93-86b5-48b1-a0a5-f2254a55b069",
+                            Id = "6ec94e17-60b5-4e2a-9252-7ebdc3ebe2d5",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "642ce713-57e0-4159-bad3-f0cfea07e118",
+                            Id = "ec94d165-fadf-4d46-8cb9-deff0b1d0107",
                             Name = "Employer",
                             NormalizedName = "EMPLOYER"
                         },
                         new
                         {
-                            Id = "e8fe8a5d-92c9-4e6a-b4d2-ea9ab48dbbec",
+                            Id = "2dac084a-5abd-4be5-9d9a-8cc93f44441b",
                             Name = "Student",
                             NormalizedName = "STUDENT"
                         });
@@ -708,8 +708,9 @@ namespace SWork.Data.Migrations
                     b.Property<int>("Rating")
                         .HasColumnType("int");
 
-                    b.Property<int>("Reviewee_id")
-                        .HasColumnType("int");
+                    b.Property<string>("Reviewee_id")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Reviewer_id")
                         .IsRequired()
@@ -720,6 +721,8 @@ namespace SWork.Data.Migrations
                     b.HasIndex("ApplicationID");
 
                     b.HasIndex("JobID");
+
+                    b.HasIndex("Reviewee_id");
 
                     b.HasIndex("Reviewer_id");
 
@@ -1053,6 +1056,12 @@ namespace SWork.Data.Migrations
                         .WithMany("Reviews")
                         .HasForeignKey("JobID");
 
+                    b.HasOne("SWork.Data.Entities.ApplicationUser", "Reviewee")
+                        .WithMany()
+                        .HasForeignKey("Reviewee_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SWork.Data.Entities.ApplicationUser", "Reviewer")
                         .WithMany()
                         .HasForeignKey("Reviewer_id")
@@ -1060,6 +1069,8 @@ namespace SWork.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Application");
+
+                    b.Navigation("Reviewee");
 
                     b.Navigation("Reviewer");
                 });

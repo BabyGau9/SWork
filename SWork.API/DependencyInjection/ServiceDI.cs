@@ -34,6 +34,7 @@ namespace SWork.API.DependencyInjection
             services.AddTransient<IPayOSService, PayOSService>();
             services.AddTransient<INotificationService, NotificationService>();
             services.AddTransient<INotificationHub, NotificationHubService>();
+            services.AddTransient<IReviewService, ReviewService>();
             
             // Background Services
             services.AddHostedService<InterviewReminderService>();

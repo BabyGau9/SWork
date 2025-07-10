@@ -14,6 +14,7 @@ using SWork.Data.DTO.Wallet.ManagementWalletDTO;
 using SWork.Data.DTO.Wallet.TransactionDTO;
 using SWork.Data.DTO.InterviewDTO;
 using SWork.Data.DTO.NotificationDTO;
+using SWork.Data.DTO.ReviewDTO;
 
 namespace SWork.Common.Helper
 {
@@ -97,7 +98,14 @@ namespace SWork.Common.Helper
             //WalletTransaction
             CreateMap<WalletTransactionCreateDTO, WalletTransaction>().ReverseMap();
             CreateMap<WalletTransactionResponseDTO, WalletTransaction>().ReverseMap();
-
+            //
+            CreateMap<Review, ReviewDTO>();
+            CreateMap<Review, ReviewDTO>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Review_id))
+                .ForMember(dest => dest.ReviewerId, opt => opt.MapFrom(src => src.Reviewer_id))
+                .ForMember(dest => dest.RevieweeId, opt => opt.MapFrom(src => src.Reviewee_id))
+                .ForMember(dest => dest.ApplicationID, opt => opt.MapFrom(src => src.ApplicationID));
+            // .ForMember(dest => dest.JobId, opt => opt.MapFrom(src => src.JobID)); 
             //
             CreateMap<Notification, NotificationResponseDTO>().ReverseMap();
             CreateMap<CreateInterviewDTO, Interview>()
