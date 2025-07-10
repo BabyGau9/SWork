@@ -12,6 +12,7 @@ using SWork.Common.Middleware;
 using SWork.Data.Entities;
 using SWork.Data.Models;
 using SWork.Service.CloudinaryService;
+using SWork.Data.Seed;
 
 namespace SWork.API
 {
@@ -201,6 +202,12 @@ namespace SWork.API
             });
 
             var app = builder.Build();
+
+            // Seed roles nếu chưa có
+            using (var scope = app.Services.CreateScope())
+            {
+                await DataSeeder.SeedRolesAsync(scope.ServiceProvider);
+            }
 
             // Đảm bảo database và tất cả bảng được tạo/đồng bộ theo migration
             using (var scope = app.Services.CreateScope())
