@@ -51,19 +51,19 @@ namespace SWork.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "6ec94e17-60b5-4e2a-9252-7ebdc3ebe2d5",
+                            Id = "af4184f7-3b7b-41c6-a15e-66bca1cb463e",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "ec94d165-fadf-4d46-8cb9-deff0b1d0107",
+                            Id = "7ea8b328-0c31-42c7-a1fd-c8a31bde4435",
                             Name = "Employer",
                             NormalizedName = "EMPLOYER"
                         },
                         new
                         {
-                            Id = "2dac084a-5abd-4be5-9d9a-8cc93f44441b",
+                            Id = "12d5e791-9d76-4055-82c2-cd77d23a2a6f",
                             Name = "Student",
                             NormalizedName = "STUDENT"
                         });
