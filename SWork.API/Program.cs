@@ -245,6 +245,7 @@ namespace SWork.API
                        var allowedOrigins = new[]
                        {
                            "https://student-work-fe.vercel.app",
+                           "https://www.swork.website",
                            "http://localhost:3000",
                            "http://localhost:3001",
                            "https://localhost:3000",
