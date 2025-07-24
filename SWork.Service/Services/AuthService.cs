@@ -21,10 +21,11 @@ namespace SWork.Service.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWalletService _walletService;
         private readonly INotificationService _notificationService;
-        //private readonly IEmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly IMapper _mapper;
         private readonly RoleManager<IdentityRole> _roleManager;
-        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IUnitOfWork unitOfWork, IMapper mapper, RoleManager<IdentityRole> roleManager, IWalletService walletService, INotificationService notificationService)
+
+        public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IUnitOfWork unitOfWork, IMapper mapper, RoleManager<IdentityRole> roleManager, IWalletService walletService, INotificationService notificationService, IEmailService emailService)
         {
             _userManager = userManager;
             _configuration = configuration;
@@ -33,6 +34,7 @@ namespace SWork.Service.Services
             _roleManager = roleManager;
             _walletService = walletService;
             _notificationService = notificationService;
+            _emailService = emailService;
         }
 
         public async Task<ApplicationUser> RegisterAsync(UserRegisterDTO dto)
@@ -73,7 +75,6 @@ namespace SWork.Service.Services
             }
             else
             {
-                // Tìm người dùng bằng tên người dùng (không phải email)
                 var userToDelete = await _userManager.FindByNameAsync(dto.UserName);
                 if (userToDelete != null)
                 {
@@ -170,7 +171,6 @@ namespace SWork.Service.Services
                 Role = role
             };
 
-            // Gửi notification đăng nhập thành công
             var notificationDto = new CreateNotificationDTO
             {
                 UserID = user.Id,
@@ -203,6 +203,38 @@ namespace SWork.Service.Services
 
             return application.Job.EmployerID.ToString() == employerId;
 
+        }
+
+        public async Task<bool> ChangePasswordAsync(string userId, ChangePasswordDTO dto)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) throw new Exception("User not found");
+            var result = await _userManager.ChangePasswordAsync(user, dto.OldPassword, dto.NewPassword);
+            if (!result.Succeeded)
+                throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+            return true;
+        }
+
+        public async Task<bool> SendForgotPasswordEmailAsync(string email, string resetLinkBaseUrl)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return false;
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = $"{resetLinkBaseUrl}?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
+            await _emailService.SendEmailAsync(user, resetLink);
+            return true;
+        }
+        public async Task<bool> ResetPasswordAsync(ResetPasswordDTO dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null) throw new Exception("User not found");
+
+            var decodedToken = Uri.UnescapeDataString(dto.Token);
+
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
+            if (!result.Succeeded)
+                throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+            return true;
         }
     }
 }

@@ -64,7 +64,7 @@ namespace SWork.API.Controllers
 
         [HttpGet("confirm-email")]
         [AllowAnonymous]
-        public async Task<ActionResult<APIResponse>> ConfirmEmail([FromQuery] string token, [FromQuery] string email)
+        public async Task<IActionResult> ConfirmEmail([FromQuery] string token, [FromQuery] string email)
         {
             var response = new APIResponse();
             try
@@ -72,9 +72,7 @@ namespace SWork.API.Controllers
                 var result = await _authService.ConfirmEmail(email, token);
                 if (result)
                 {
-                    response.IsSuccess = true;
-                    response.StatusCode = HttpStatusCode.OK;
-                    return Ok(response);
+                    return Redirect("https://www.swork.website/login?confirmed=true");
                 }
                 response.IsSuccess = false;
                 response.ErrorMessages.Add("Không thể xác nhận email của bạn!");
@@ -156,6 +154,48 @@ namespace SWork.API.Controllers
                 return BadRequest("Cần phải có refresh token!");
             await _authService.LogoutAsync(dto.RefreshToken);
             return Ok(new { message = "Đăng xuất thành công" });
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] EmailRequestDTO dto)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}/reset-password";
+            var result = await _authService.SendForgotPasswordEmailAsync(dto.toEmail, baseUrl);
+            if (!result) return NotFound("Không tìm thấy email người dùng!");
+            return Ok("Đã gửi email đặt lại mật khẩu!");
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO dto)
+        {
+            try
+            {
+                var result = await _authService.ResetPasswordAsync(dto);
+                return Ok("Đặt lại mật khẩu thành công!");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            try
+            {
+                var result = await _authService.ChangePasswordAsync(userId, dto);
+                return Ok("Đổi mật khẩu thành công!");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
