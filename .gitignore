@@ -2,7 +2,7 @@ syntax: glob
 
 ### VisualStudio ###
 
-
+SWork.API/appsettings
 appsettings.json
 **/Migrations/
 # Tool Runtime Dir
